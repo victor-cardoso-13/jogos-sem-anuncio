@@ -9,7 +9,9 @@
  * - Gato fora da resposta = erro: o gato some e perde 1 coração.
  * - Acabaram os corações: a mesma fase recomeça do zero.
  * - Dois toques põem gato; um toque (ou arrastar) marca ✕.
- * - Modo preguiça: ao acertar um gato, marca ✕ em tudo que ele bloqueia.
+ * - Modo preguiça (o botão muda a cada toque: desligado → 1 → 2 → desligado):
+ *     1: ao acertar um gato, marca ✕ em tudo que ele bloqueia;
+ *     2: faz o 1 e ainda acende as casas onde só cabe um gato (o jogador ainda põe o gato).
  */
 
 export const CORACOES = 3;

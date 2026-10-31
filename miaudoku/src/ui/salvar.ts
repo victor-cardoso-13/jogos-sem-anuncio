@@ -7,6 +7,7 @@
  * Se um dia as fases forem geradas de novo, troque o "v1" da chave.
  */
 import type { Jogo } from '../motor/jogo.ts';
+import { modoPreguica } from '../nuvem/mesclar.ts';
 
 const BASE = 'miaudoku:v1';
 /** Última conta que entrou neste aparelho (só um "marcador", não é senha). */
@@ -26,12 +27,14 @@ export interface ProgressoTamanho {
 }
 
 export interface Salvo {
-  preguica: boolean;
+  /** modo preguiça: 0 desligado, 1 ou 2 */
+  preguica: number;
   preguicaEm?: number;
   tamanhos: Record<number, ProgressoTamanho>;
 }
 
-export const vazio = (): Salvo => ({ preguica: false, tamanhos: {} });
+export const vazio = (): Salvo => ({ preguica: 0, tamanhos: {} });
+
 
 /** De quem é a gaveta aberta agora (null = jogando sem conta). */
 let dono: string | null = localStorage.getItem(ULTIMA_CONTA);
@@ -56,7 +59,11 @@ export function quandoSalvar(fn: ((s: Salvo) => void) | null) {
 export function carregar(uid: string | null = dono): Salvo {
   try {
     const txt = localStorage.getItem(chave(uid));
-    if (txt) return { ...vazio(), ...JSON.parse(txt) };
+    if (txt) {
+      const s: Salvo = { ...vazio(), ...JSON.parse(txt) };
+      s.preguica = modoPreguica(s.preguica);
+      return s;
+    }
   } catch {
     /* sem dados ou corrompido: começa do zero */
   }

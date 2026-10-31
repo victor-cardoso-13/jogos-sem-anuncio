@@ -2,7 +2,7 @@
  * Uma partida de uma fase: as marcas do jogador, os corações e o "desfazer".
  * Não sabe nada de tela; a tela chama estas funções.
  */
-import { ehResposta, seAtacam, type Fase } from './fase.ts';
+import { ehResposta, seAtacam, unidades, type Fase } from './fase.ts';
 import type { Marca } from './dica.ts';
 import { CORACOES } from './regras.ts';
 
@@ -64,3 +64,21 @@ export function porGato(j: Jogo, f: Fase, casa: number, preguica: boolean): Resu
 }
 
 export const gatosPostos = (j: Jogo) => j.marcas.filter(m => m === 'gato').length;
+
+/**
+ * Modo preguiça 2: casas onde SÓ CABE UM GATO — a única casa livre de uma linha,
+ * coluna ou cor que ainda não tem gato.
+ * "Livre" conta só os gatos já postos (que sempre estão certos), e não os ✕ feitos
+ * à mão: assim um ✕ errado do jogador nunca faz o jogo apontar uma casa errada.
+ */
+export function casasSoCabeUm(f: Fase, marcas: Marca[]): number[] {
+  const gatos = marcas.flatMap((m, s) => (m === 'gato' ? [s] : []));
+  const livre = (s: number) => marcas[s] !== 'gato' && !gatos.some(g => seAtacam(f, g, s));
+  const achadas = new Set<number>();
+  for (const u of unidades(f)) {
+    if (u.casas.some(s => marcas[s] === 'gato')) continue;
+    const livres = u.casas.filter(livre);
+    if (livres.length === 1 && marcas[livres[0]] !== 'x') achadas.add(livres[0]);
+  }
+  return [...achadas].sort((a, b) => a - b);
+}

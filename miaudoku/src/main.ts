@@ -5,13 +5,14 @@
 import './estilo.css';
 import type { Fase } from './motor/fase.ts';
 import { acharDica, type Dica } from './motor/dica.ts';
-import { apagarTodosX, definirX, desfazer, gatosPostos, guardar, novoJogo, porGato, type Jogo } from './motor/jogo.ts';
-import { CORACOES, FASES_POR_TAMANHO, FOLGA_DUPLO_TOQUE, TAMANHOS, TEMPO_DUPLO_TOQUE_MS } from './motor/regras.ts';
-import { htmlConta, htmlInicio, htmlJanela, htmlJogo, montarGrade } from './ui/desenho.ts';
+import { apagarTodosX, casasSoCabeUm, definirX, desfazer, gatosPostos, guardar, novoJogo, porGato, type Jogo } from './motor/jogo.ts';
+import { FASES_POR_TAMANHO, FOLGA_DUPLO_TOQUE, TAMANHOS, TEMPO_DUPLO_TOQUE_MS } from './motor/regras.ts';
+import { htmlBotaoPreguica, htmlCartaoDica, htmlConta, htmlInicio, htmlJanela, htmlJogo, icone, montarGrade, textoSituacao } from './ui/desenho.ts';
+import { abrirTutorial, jaViuTutorial } from './ui/tutorial.ts';
 import { carregarFase } from './ui/pacotes.ts';
 import { carregar, progresso, salvar, tocar } from './ui/salvar.ts';
 import {
-  carregarConta, iniciarNuvem, levarProgressoSemConta, progressoSemConta, sairDaConta,
+  carregarConta, enviarAgora, iniciarNuvem, levarProgressoSemConta, progressoSemConta, sairDaConta,
   sincronizar, situacaoAtual, trocarGaveta, usuarioAtual,
 } from './nuvem/sincronia.ts';
 
@@ -19,8 +20,6 @@ const app = document.getElementById('app')!;
 /** Progresso de quem está jogando (troca quando alguém entra ou sai da conta). */
 let salvo = carregar();
 let tela: 'inicio' | 'jogo' = 'inicio';
-
-const TEXTO_INICIAL = 'Dois toques põem um gato. Um toque (ou arrastar) marca ✕.';
 
 // Partida aberta agora
 let n = 0;
@@ -50,8 +49,14 @@ function desenharInicio() {
   app.querySelectorAll<HTMLElement>('[data-tamanho]').forEach(b => {
     b.onclick = () => abrirTamanho(Number(b.dataset.tamanho));
   });
-  app.querySelector<HTMLElement>('#abrir-conta')?.addEventListener('click', abrirConta);
-  app.querySelector<HTMLElement>('#sair-conta')?.addEventListener('click', confirmarSair);
+  $('#conta').onclick = abrirMenuConta;
+  // prévia de verdade da fase em que cada tamanho está
+  app.querySelectorAll<HTMLElement>('[data-previa]').forEach(async el => {
+    const tam = Number(el.dataset.previa);
+    const atual = Math.min(progresso(salvo, tam).fase, FASES_POR_TAMANHO - 1);
+    const carregada = await carregarFase(tam, atual);
+    if (carregada && el.isConnected) montarGrade(el, carregada.fase, { tocavel: false, grossa: 1.3 });
+  });
 }
 
 /** Usa o progresso juntado com a nuvem (só na tela inicial, para não atrapalhar uma partida). */
@@ -107,38 +112,48 @@ function mostrarJogo() {
   montarGrade($('#grade'), fase!);
   ligarToques();
   ligarBotoes();
-  avisar(TEXTO_INICIAL);
   atualizar();
+  encaixar();
 }
 
 /** Mostra as marcas e os corações, e guarda tudo no aparelho. */
 function atualizar() {
   if (!jogo) return;
   dicaAtual = null;
+  app.querySelector('#cartao-dica')?.remove();
   const grade = $('#grade');
   grade.classList.remove('com-dica');
   grade.querySelectorAll<HTMLElement>('.casa').forEach((el, s) => {
     el.className = 'casa' + (jogo!.marcas[s] ? ' ' + jogo!.marcas[s] : '');
   });
-  $('#coracoes').textContent = '❤️'.repeat(jogo.coracoes) + '🤍'.repeat(CORACOES - jogo.coracoes);
+  // preguiça 2: acende as casas onde só cabe um gato
+  if (salvo.preguica === 2 && fase) {
+    for (const s of casasSoCabeUm(fase, jogo.marcas)) grade.children[s].classList.add('so-cabe');
+  }
+  app.querySelectorAll('#vidas svg').forEach((c, i) => c.setAttribute('class', `ic ${i < jogo!.coracoes ? 'cheio' : 'vazio'}`));
   tocar(salvo, n);
   salvar(salvo);
 }
 
-function avisar(texto: string) {
-  $('#aviso').textContent = texto;
-  encaixar();
+/** Aviso rápido em cima da grade, que some sozinho. */
+function toast(texto: string, comCoracao = false) {
+  const palco = app.querySelector('#palco');
+  if (!palco) return;
+  palco.querySelector('.toast')?.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = (comCoracao ? icone('coracao') : '') + texto;
+  palco.appendChild(t);
+  setTimeout(() => t.classList.add('saindo'), 1900);
+  setTimeout(() => t.remove(), 2300);
 }
 
 /** Faz a grade ocupar o maior espaço possível, sem barra de rolagem. */
 function encaixar() {
   const grade = app.querySelector<HTMLElement>('#grade');
-  if (!grade) return;
-  const outros = ['.topo', '#aviso', '.barra'].reduce((s, sel) => s + $(sel).offsetHeight, 0);
-  const estilo = getComputedStyle(app);
-  const folga = parseFloat(estilo.paddingTop) + parseFloat(estilo.paddingBottom) + 12 * 3;
-  const largura = app.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
-  const lado = Math.max(160, Math.min(largura, app.clientHeight - outros - folga, 640));
+  const palco = app.querySelector<HTMLElement>('#palco');
+  if (!grade || !palco) return;
+  const lado = Math.max(160, Math.min(palco.clientWidth, palco.clientHeight - 8, 640));
   grade.style.setProperty('--lado', `${Math.floor(lado)}px`);
 }
 addEventListener('resize', encaixar);
@@ -180,7 +195,6 @@ function ligarToques() {
     definirX(jogo, casa, valor);
     arrasto = { valor, x: e.clientX, y: e.clientY, ativo: false };
     atualizar();
-    if (dicaVisivel) avisar(TEXTO_INICIAL);
   };
   app.onpointermove = e => {
     if (!arrasto || !jogo) return;
@@ -202,28 +216,24 @@ function ligarToques() {
   onpointerup = onpointercancel = () => (arrasto = null);
 }
 
-let dicaVisivel = false;
-
 function tentarGato(casa: number) {
   if (!jogo || !fase) return;
-  const r = porGato(jogo, fase, casa, salvo.preguica);
+  const r = porGato(jogo, fase, casa, salvo.preguica >= 1);
   atualizar();
-  dicaVisivel = false;
   if (r === 'certo') {
     const faltam = n - gatosPostos(jogo);
-    avisar(faltam === 1 ? 'Isso! Falta 1 gato.' : `Isso! Faltam ${faltam} gatos.`);
+    const soCabe = salvo.preguica === 2 ? casasSoCabeUm(fase, jogo.marcas).length : 0;
+    if (soCabe) toast(soCabe === 1 ? '✨ 1 casa só pode ter gato' : `✨ ${soCabe} casas só podem ter gato`);
+    else toast(faltam === 1 ? 'Isso! Falta 1 gato.' : `Isso! Faltam ${faltam} gatos.`);
   } else if (r === 'errado' || r === 'perdeu') {
     const el = $('#grade').children[casa] as HTMLElement;
     el.classList.add('errado');
     setTimeout(() => el.classList.remove('errado'), 500);
-    $('#coracoes').classList.remove('perdeu');
-    void $('#coracoes').offsetWidth; // reinicia a animação
-    $('#coracoes').classList.add('perdeu');
+    app.querySelectorAll('#vidas svg')[jogo.coracoes]?.classList.add('perdeu');
     navigator.vibrate?.(120);
-    if (r === 'errado') avisar('Aqui não tem gato. Perdeu 1 coração.');
+    if (r === 'errado') toast('Aqui não tem gato · −1 vida', true);
     else setTimeout(perdeu, 600);
   } else if (r === 'venceu') {
-    avisar('Muito bem! 🎉');
     venceu();
   }
 }
@@ -259,34 +269,35 @@ function perdeu() {
 function ligarBotoes() {
   $('#voltar').onclick = () => mostrarInicio();
   $('#desfazer').onclick = () => {
-    if (jogo && desfazer(jogo)) {
-      atualizar();
-      avisar(TEXTO_INICIAL);
-    }
+    if (jogo && desfazer(jogo)) atualizar();
   };
   $('#apagar').onclick = () => {
     if (!jogo) return;
     apagarTodosX(jogo);
     atualizar();
-    avisar(TEXTO_INICIAL);
   };
   $('#recomecar').onclick = () => {
     if (!fase) return;
     jogo = novoJogo(fase);
     progresso(salvo, n).jogo = jogo;
     atualizar();
-    avisar('A fase recomeçou do zero.');
+    toast('A fase recomeçou do zero.');
   };
-  $('#preguica').onclick = () => {
-    salvo.preguica = !salvo.preguica;
-    salvo.preguicaEm = Date.now();
-    $('#preguica').classList.toggle('ligado', salvo.preguica);
-    salvar(salvo);
-    avisar(salvo.preguica
-      ? 'Modo preguiça ligado: ao acertar um gato, o jogo marca ✕ em todas as casas que ele bloqueia.'
-      : 'Modo preguiça desligado: você marca os ✕ do seu jeito.');
-  };
+  ligarPreguica();
   $('#dica').onclick = mostrarDica;
+}
+
+/** Cada toque muda: desligado → 1 → 2 → desligado. */
+function ligarPreguica() {
+  $('#preguica').onclick = () => {
+    salvo.preguica = (salvo.preguica + 1) % 3;
+    salvo.preguicaEm = Date.now();
+    $('#preguica').outerHTML = htmlBotaoPreguica(salvo.preguica);
+    ligarPreguica();
+    atualizar();
+    salvar(salvo);
+    toast(['Preguiça desligada', 'Preguiça 1: ✕ sozinho ao acertar', 'Preguiça 2: ✕ sozinho + onde só cabe gato'][salvo.preguica]);
+  };
 }
 
 function mostrarDica() {
@@ -301,28 +312,22 @@ function mostrarDica() {
   d.alvo.forEach(s => el(s).classList.add('dica-alvo'));
   d.marcarX.forEach(s => el(s).classList.add('dica-x'));
   dicaAtual = d;
-  dicaVisivel = true;
-
-  const aviso = $('#aviso');
-  aviso.textContent = '💡 ' + d.texto;
-  const fazer = document.createElement('button');
-  fazer.className = 'fazer';
-  fazer.textContent = 'Fazer para mim';
-  fazer.onclick = () => fazerDica(d);
-  aviso.append(document.createElement('br'), fazer);
-  encaixar();
+  // o cartão fica do lado oposto ao da dica, para não tapar as casas destacadas
+  const casas = [...d.alvo, ...d.marcarX, ...d.area];
+  const linhaMedia = casas.reduce((t, c) => t + Math.floor(c / n), 0) / Math.max(1, casas.length);
+  app.insertAdjacentHTML('beforeend', htmlCartaoDica(d.texto, linhaMedia >= n / 2));
+  $('#fazer-dica').onclick = () => fazerDica(d);
+  $('#fechar-dica').onclick = () => atualizar();
 }
 
 function fazerDica(d: Dica) {
   if (!jogo || !fase || dicaAtual !== d) return;
-  dicaVisivel = false;
   const { gato, marcar, tirarX } = d.acao;
   if (gato !== undefined) return tentarGato(gato);
   guardar(jogo);
   if (tirarX !== undefined) jogo.marcas[tirarX] = '';
   for (const s of marcar ?? []) definirX(jogo, s, 'x');
   atualizar();
-  avisar(TEXTO_INICIAL);
 }
 
 // ---------------------------------------------------------------------------
@@ -421,6 +426,51 @@ function esperarUsuario(): Promise<NonNullable<ReturnType<typeof usuarioAtual>>>
   });
 }
 
+const escapar = (t: string) => t.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+
+/** Botão de conta (canto da tela inicial): entrar, ver a situação, "Como jogar" e sair. */
+function abrirMenuConta() {
+  const u = usuarioAtual();
+  const comoJogar = { id: 'j-tutorial', rotulo: 'Como jogar', claro: true, acao: () => { desenharInicio(); abrirTutorial(document.body); } };
+  const zerar = { id: 'j-zerar', rotulo: 'Zerar progresso', claro: true, acao: confirmarZerar };
+  const fechar = { id: 'j-fechar', rotulo: 'Fechar', claro: true, acao: desenharInicio };
+  if (!u) {
+    janela('☁️', 'Sua conta', 'Sem conta, o seu progresso fica só neste aparelho. Com uma conta, ele fica guardado na nuvem.', [
+      { id: 'j-entrar', rotulo: 'Entrar ou criar conta', acao: abrirConta }, comoJogar, zerar, fechar,
+    ]);
+  } else {
+    janela('👤', escapar(u.email), textoSituacao(situacaoAtual()), [
+      comoJogar, zerar, { id: 'j-sair-conta', rotulo: 'Sair da conta', claro: true, acao: confirmarSair }, fechar,
+    ]);
+  }
+}
+
+/**
+ * Zera o progresso de todos os tamanhos (volta todos para a Fase 1).
+ * Usa uma "rodada" nova em cada tamanho: assim a nuvem e os outros aparelhos
+ * da mesma conta também ficam zerados, em vez de devolverem as fases antigas.
+ */
+function confirmarZerar() {
+  const naNuvem = usuarioAtual() ? ' (neste aparelho e na nuvem)' : '';
+  janela('⚠️', 'Tem certeza?', `Isso apaga o progresso de todos os tamanhos${naNuvem} e volta tudo para a Fase 1. Não dá para desfazer.`, [
+    { id: 'j-zerar-sim', rotulo: 'Sim, zerar tudo', acao: () => {
+      for (const { n: tam } of TAMANHOS) {
+        const p = progresso(salvo, tam);
+        p.fase = 0;
+        p.jogo = null;
+        p.faseTexto = undefined;
+        p.rodada = (p.rodada ?? 0) + 1;
+        tocar(salvo, tam);
+      }
+      salvar(salvo);
+      void enviarAgora(); // zerar é importante: vai para a nuvem na hora, sem esperar
+      desenharInicio();
+      janela('🐱', 'Progresso zerado', 'Tudo de volta para a Fase 1. Bom jogo!', [{ id: 'j-ok', rotulo: 'Ok', acao: desenharInicio }]);
+    } },
+    { id: 'j-zerar-nao', rotulo: 'Cancelar', claro: true, acao: desenharInicio },
+  ]);
+}
+
 function confirmarSair() {
   janela('👋', 'Sair da conta?', 'O seu progresso continua guardado na nuvem. Neste aparelho, o jogo volta para "sem conta".', [
     { id: 'j-sair', rotulo: 'Sair', acao: async () => { await sairDaConta(); } },
@@ -429,6 +479,7 @@ function confirmarSair() {
 }
 
 mostrarInicio(false);
+if (!jaViuTutorial()) abrirTutorial(document.body);
 void iniciarNuvem({
   // alguém entrou ou saiu: abre a gaveta certa e volta para a tela inicial
   trocouDeConta: () => {
