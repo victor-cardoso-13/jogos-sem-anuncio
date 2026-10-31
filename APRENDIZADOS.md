@@ -57,7 +57,9 @@ Jogar no computador.command ← dois cliques e o jogo abre no navegador
    - (d) níveis do computador, dica e polimento.
 4. **Cada regra nova vira teste** com os exemplos que a família confirmou.
 5. **Tirar prints automáticos** (Playwright) depois de cada mudança na tela. É assim que se confere que nada rola, nada sobrepõe e nada some.
-   - **Sempre em 5 tamanhos:** iPad deitado (1180×820), iPad em pé (820×1180), iPhone deitado (844×390), iPhone em pé (390×844) e iPhone SE deitado (667×375). No Mexe-Mexe, testar só no iPad deixou o jogo **injogável no celular**.
+   - **Aparelhos que importam:** iPad (deitado 1180×820 e em pé 820×1180) e iPhones 12, 13, 15 e 16, normais e Pro Max, em pé e deitados, **descontando as barras do Safari** (ex.: Pro Max em pé ≈ 440×800, deitado ≈ 956×360). **Não gastar tempo com iPhone SE.** No Mexe-Mexe, testar só no iPad deixou o jogo **injogável no celular**.
+   - **No celular:** botões minimalistas (ícone + nome pequeno, numa fila só), a mão com a fila inteira, e a mesa com um tamanho mínimo legível — se não couber, **só a mesa** rola. Cartas miúdas são piores que uma mesa que rola.
+   - **Casos reais viram teste.** Quando a família manda print de "antes e depois" de algo que a dica não achou, montar a mesa exata num teste antes de corrigir.
    - Testar também com a **tela cheia** (partida longa simulada) e medir depois que as animações terminam.
    - **Menus flutuantes** (que abrem em cima de um botão) quebram em tela pequena. Prefira uma janela no meio da tela, com botões grandes.
 
@@ -150,3 +152,19 @@ Todas essas decisões ficam em `src/motor/regras.ts`, comentadas com exemplos.
 - **"Começar de novo" precisa de um contador de rodadas**, senão a nuvem "devolve" a fase antiga.
 - **Testar com contas de mentira no Firebase de verdade** (e apagar no fim): é o único jeito de provar que as contas não se misturam.
 - **Ajudante do Firebase no Claude:** `Computador/.mcp.json` + dois cliques em `Entrar no Firebase.command` (uma vez só).
+
+## 11. O que o Mexe-Mexe ensinou na nuvem e na publicação
+
+- **Jogo contra o computador também tem "progresso": o retrospecto.** Cada partida terminada é guardada com uma **identidade** (`partidaId`), num mapa e não numa lista.
+  - Juntar dois aparelhos = somar os mapas. A mesma partida nunca conta duas vezes.
+  - Nunca guardar só os totais ("5 vitórias"): dois aparelhos somando totais erram a conta.
+- **A partida vai para a nuvem como texto** (`JSON.stringify`, sem o "Desfazer"). Assim o Firebase nunca reclama de listas dentro de listas ou de `undefined`. Uma partida inteira ocupa uns 8 KB.
+- **Combinar com a família o que conta no retrospecto:** a partida abandonada não conta; o nível que vale é o do fim; com vários adversários, "vitória" é só quando VOCÊ ganha.
+- **Se o jogo não tem "voltar para o início"**, ponha Conta e Retrospecto também nos Ajustes.
+- **A troca de conta interrompe a jogada do computador** (um contador de "gaveta"). Senão, ele continuaria jogando na partida da outra pessoa.
+- **Publicar um jogo novo no site:** tirar do `.gitignore`; um passo no workflow (`npm ci && npm test && npm run build`); `cp -r jogo/dist _site/jogo`; link em `site/index.html`.
+  - O `base: './'` do Vite serve para qualquer endereço: GitHub Pages, computador e Wi-Fi.
+- **Teste de tempo do computador:** o GitHub é mais lento que o Mac. A folga é maior só lá (`process.env.CI`). Se um teste falha, **nada é publicado, nem os outros jogos**.
+- **Ícone do app sem programa de desenho:** um SVG numa página HTML, fotografado pelo Playwright em 512, 192 e 180 px.
+- **Duas conversas do Claude ao mesmo tempo** (uma no Miaudoku, outra no Mexe-Mexe): no commit, adicionar só os arquivos do próprio jogo, **nunca `git add -A`**.
+- **No iPhone, cada jogo posto na Tela de Início guarda as suas coisas separado.** É preciso entrar na conta uma vez em cada jogo. No Safari normal, entrar num jogo já vale para o outro.

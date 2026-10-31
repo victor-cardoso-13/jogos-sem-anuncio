@@ -3,9 +3,6 @@ dist
 .DS_Store
 *.log
 
-# Por enquanto só o Miaudoku é publicado; o Mexe-Mexe entra depois.
-mexe-mexe/
-
 # Configurações locais deste Mac (caminhos do Claude e do Firebase)
 .mcp.json
 .firebase/
