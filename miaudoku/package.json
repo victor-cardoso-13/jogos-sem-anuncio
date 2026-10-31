@@ -1,26 +1,10 @@
 {
-  "name": "miaudoku",
+  "name": "miaudoku-mudou",
   "private": true,
-  "version": "0.1.0",
-  "type": "module",
+  "version": "1.0.0",
+  "description": "O Miaudoku mudou para /Users/victor/Desktop/Jogos/miaudoku (repositório próprio). Esta pasta só publica o aviso de mudança no endereço antigo.",
   "scripts": {
-    "dev": "vite --host",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host",
-    "test": "vitest run",
-    "gerar": "node scripts/gerar-fases.ts"
-  },
-  "devDependencies": {
-    "@types/node": "^26.6.6",
-    "playwright": "^1.64.1",
-    "typescript": "^7.0.2",
-    "vite": "^8.3.5",
-    "vite-plugin-pwa": "^2.0.0",
-    "vitest": "^5.0.5"
-  },
-  "dependencies": {
-    "@fontsource/fredoka": "^5.3.0",
-    "@fontsource/nunito": "^5.3.0",
-    "firebase": "^13.1.0"
+    "test": "node -e \"console.log('nada para testar: só o aviso de mudança')\"",
+    "build": "node montar.mjs"
   }
 }
