@@ -79,6 +79,16 @@ describe('juntar aparelho e nuvem', () => {
     expect(j.tamanhos[9].fase).toBe(0);
   });
 
+  it('gatinho: vale a escolha mais recente; sem escolha (ou desconhecido) é o creme', () => {
+    const celular: Salvo = { ...salvo({}), gatinho: 'sentado', gatinhoEm: 10 };
+    const computador: Salvo = { ...salvo({}), gatinho: 'traco', gatinhoEm: 20 };
+    expect(mesclar(celular, computador).gatinho).toBe('traco');
+    expect(mesclar(computador, celular).gatinho).toBe('traco');
+    expect(daNuvem(paraNuvem(celular)).gatinho).toBe('sentado');
+    expect(daNuvem({ versao: 1, preguica: 0, preguicaEm: 0, tamanhos: {} }).gatinho).toBe('creme');
+    expect(mesclar(salvo({}), { ...salvo({}), gatinho: 'dinossauro', gatinhoEm: 5 }).gatinho).toBe('creme');
+  });
+
   it('não mexe nas cópias originais', () => {
     const a = salvo({ 5: tam(2, { jogo: { marcas: ['x'], coracoes: 3, historico: [] } }) });
     const j = mesclar(a, salvo({}));

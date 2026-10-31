@@ -30,6 +30,9 @@ export interface Salvo {
   /** modo preguiça: 0 desligado, 1 ou 2 */
   preguica: number;
   preguicaEm?: number;
+  /** gatinho escolhido (ver src/ui/gatinhos.ts); sem valor = o padrão */
+  gatinho?: string;
+  gatinhoEm?: number;
   tamanhos: Record<number, ProgressoTamanho>;
 }
 
