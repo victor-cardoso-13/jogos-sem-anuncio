@@ -148,10 +148,10 @@ export function htmlJogo(n: number, numero: number, nivel: string, preguica: num
     </nav>`;
 }
 
-/** Cartão da dica (sobe de baixo, ou desce de cima se a dica estiver lá embaixo na grade). */
-export function htmlCartaoDica(texto: string, emCima: boolean) {
+/** Cartão da dica: entra no lugar da barra de baixo (o texto já vem com negritos em HTML). */
+export function htmlCartaoDica(texto: string) {
   return `
-    <div class="cartao-dica ${emCima ? 'em-cima' : ''}" id="cartao-dica">
+    <div class="cartao-dica" id="cartao-dica">
       <div class="cab"><span class="lampada">${icone('dica')}</span>DICA</div>
       <p>${texto}</p>
       <div class="botoes">
