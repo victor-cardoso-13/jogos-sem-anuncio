@@ -1,0 +1,52 @@
+# Publica o site no GitHub Pages sempre que algo entra no "main".
+# Antes de publicar, roda os testes: se algum falhar, o site NÃO é atualizado.
+name: Publicar o site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publicar.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: miaudoku/package-lock.json
+
+      - name: "Miaudoku: instalar, testar e montar"
+        working-directory: miaudoku
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Juntar o site
+        run: |
+          mkdir -p _site
+          cp site/index.html _site/
+          cp -r miaudoku/dist _site/miaudoku
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: publicar
+        uses: actions/deploy-pages@v4

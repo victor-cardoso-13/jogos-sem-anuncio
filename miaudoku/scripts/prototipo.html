@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Miaudoku – protótipo</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: -apple-system, "SF Pro Rounded", system-ui, sans-serif;
+    background: radial-gradient(circle at 50% 0%, #fffaf2, #f6eee2 70%);
+    color: #3b2f2a;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px 16px; gap: 14px; user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  header { width: min(92vw, 560px); display: flex; justify-content: space-between; align-items: center; }
+  h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.5px; }
+  .nivel { font-size: 14px; font-weight: 500; opacity: .6; margin-top: 2px; }
+  .coracoes {
+    font-size: 22px; letter-spacing: 3px; background: #fff; padding: 6px 12px;
+    border-radius: 999px; box-shadow: 0 2px 8px #3b2f2a14;
+  }
+  .aviso {
+    width: min(92vw, 560px); background: #fff; border-radius: 20px;
+    padding: 12px 18px; font-size: 17px; line-height: 1.45; text-align: center; min-height: 48px;
+    box-shadow: 0 2px 10px #3b2f2a12;
+  }
+  .aviso button { margin-top: 10px; font-size: 15px; padding: 8px 16px; }
+  .grade {
+    --n: 7; --lado: min(92vw, 62vh, 560px);
+    width: var(--lado); height: var(--lado);
+    display: grid;
+    grid-template-columns: repeat(var(--n), 1fr);
+    grid-template-rows: repeat(var(--n), 1fr);
+    border: 3px solid #3b2f2a; border-radius: 22px; overflow: hidden;
+    touch-action: none; background: #fbf6ee;
+    box-shadow: 0 10px 30px #3b2f2a26, 0 2px 6px #3b2f2a14;
+  }
+  .casa {
+    --corx: #2a201c; --opx: .82;
+    display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--lado) / var(--n) * .6);
+    border: 0 solid #3b2f2a; cursor: pointer; position: relative; min-width: 0; min-height: 0;
+    transition: opacity .2s, filter .2s;
+  }
+  /* ✕: dois traços arredondados, grossos e escuros */
+  .casa.x::before, .casa.x::after, .casa.dica-x::before, .casa.dica-x::after {
+    content: ""; position: absolute; left: 31%; top: 46%;
+    width: 38%; height: 8%; min-height: 4px;
+    background: var(--corx); opacity: var(--opx); border-radius: 99px;
+    transform: rotate(45deg); animation: surge .15s ease-out;
+  }
+  .casa.x::after, .casa.dica-x::after { transform: rotate(-45deg); }
+  .casa.dica-x { --corx: #d0473c; --opx: .9; }
+  @keyframes surge { from { scale: .3; opacity: 0; } }
+
+  .casa.gato::after { content: "🐱"; animation: surge .2s ease-out; }
+  .casa.errado::after { content: "🐱"; animation: treme .5s; opacity: .6; }
+  @keyframes treme {
+    0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); }
+  }
+  /* dica: o resto da grade apaga, casa-alvo pulsando */
+  .grade.com-dica .casa:not(.dica-area):not(.dica-alvo):not(.dica-x) { filter: saturate(.45) brightness(1.05); opacity: .55; }
+  .casa.dica-alvo { box-shadow: inset 0 0 0 4px #e7a400; animation: pulsa 1s infinite alternate; }
+  @keyframes pulsa { to { box-shadow: inset 0 0 0 4px #e7a40044; } }
+
+  /* barra de ferramentas minimalista: ícone de traço + nome pequeno */
+  .barra { display: flex; justify-content: space-between; width: min(92vw, 420px); }
+  .barra button {
+    background: none; box-shadow: none; padding: 0; color: #3b2f2a;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 600; letter-spacing: .2px;
+  }
+  .barra .icone {
+    width: 50px; height: 50px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; transition: background .15s;
+  }
+  .barra button:hover .icone { background: #3b2f2a0f; }
+  .barra button:hover { filter: none; }
+  .barra svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .barra .rotulo { opacity: .7; }
+  .barra button.ligado .icone { background: #f3c969; }
+  .barra button.ligado .rotulo { opacity: 1; }
+  button {
+    font: inherit; font-size: 16px; font-weight: 600; padding: 12px 20px; border-radius: 999px; border: 0;
+    background: #3b2f2a; color: #fff; cursor: pointer;
+    box-shadow: 0 2px 8px #3b2f2a22; transition: transform .1s, filter .15s;
+  }
+  button:hover { filter: brightness(1.06); }
+  button:active { transform: scale(.96); }
+  button.claro { background: #fff; color: #3b2f2a; }
+  .tampa {
+    position: fixed; inset: 0; background: #2a201c66; backdrop-filter: blur(4px); display: none;
+    align-items: center; justify-content: center;
+  }
+  .tampa.ver { display: flex; }
+  .caixa {
+    background: #fff; border-radius: 28px; padding: 28px 36px; text-align: center; font-size: 19px;
+    box-shadow: 0 20px 50px #0003;
+  }
+  .caixa .grande { font-size: 56px; }
+  .nota { font-size: 13px; opacity: .5; max-width: 560px; text-align: center; }
+</style>
+</head>
+<body>
+  <header>
+    <div><h1>Miaudoku</h1><div class="nivel">Médio · 7×7</div></div>
+    <div class="coracoes" id="coracoes"></div>
+  </header>
+
+  <div class="aviso" id="aviso"></div>
+
+  <div class="grade" id="grade"></div>
+
+  <div class="barra">
+    <button id="desfazer"><span class="icone"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></span><span class="rotulo">Desfazer</span></button>
+    <button id="limparX"><span class="icone"><svg viewBox="0 0 24 24"><path d="M7 21h10"/><path d="m14.5 4.5 5 5-9.5 9.5H6l-2.5-2.5a1.5 1.5 0 0 1 0-2.1z"/><path d="m9 10 5 5"/></svg></span><span class="rotulo">Apagar ✕</span></button>
+    <button id="dica"><span class="icone"><svg viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21.5h4"/><path d="M12 2.5a6.5 6.5 0 0 0-3.8 11.8c.5.4.8 1 .8 1.6V16h6v-.1c0-.6.3-1.2.8-1.6A6.5 6.5 0 0 0 12 2.5z"/></svg></span><span class="rotulo">Dica</span></button>
+    <button id="recomecar"><span class="icone"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.8-6.5L3 8"/><path d="M3 3v5h5"/></svg></span><span class="rotulo">Recomeçar</span></button>
+    <button id="preguica"><span class="icone"><svg viewBox="0 0 24 24"><path d="M20.5 13.5A8.5 8.5 0 1 1 10.5 3.5a6.5 6.5 0 0 0 10 10z"/></svg></span><span class="rotulo">Preguiça</span></button>
+  </div>
+
+  <div class="nota">Protótipo: é só uma fase de exemplo, para aprovar o visual e o jeito de tocar.
+    O jogo de verdade vai gerar fases novas, todas com uma resposta só.</div>
+
+  <div class="tampa" id="tampa"><div class="caixa" id="caixa"></div></div>
+
+<script id="logica">
+// ---- Fase de exemplo (7×7): resposta e regiões ----
+const N = 7;
+const resposta = [6, 3, 0, 5, 2, 4, 1]; // coluna do gato em cada linha
+const regioes = [
+  "CCCAAAA",
+  "CCCBBDA",
+  "CDDDDDD",
+  "GGEEFDF",
+  "GGEFFFF",
+  "GGEFFFF",
+  "GGGGFFF",
+];
+const cores = { A:"#f2cbcb", B:"#cfe3f3", C:"#f9e6b0", D:"#d5ebd2", E:"#e2d6f3", F:"#f9d9bb", G:"#dbeae8" };
+const nomeCor = { A:"rosa", B:"azul", C:"amarela", D:"verde", E:"lilás", F:"laranja", G:"verde-água" };
+
+// ---- Dica: procura o raciocínio mais simples que avança o jogo ----
+// Devolve { texto, area, alvo, marcarX, acao } — as casas são "l,c".
+const k = (l, c) => l + "," + c;
+const lc = s => s.split(",").map(Number);
+
+function unidades() {
+  const u = [];
+  for (let l = 0; l < N; l++) u.push({ tipo: "linha", id: l, casas: [...Array(N)].map((_, c) => k(l, c)) });
+  for (let c = 0; c < N; c++) u.push({ tipo: "coluna", id: c, casas: [...Array(N)].map((_, l) => k(l, c)) });
+  for (const r of Object.keys(nomeCor)) {
+    const casas = [];
+    for (let l = 0; l < N; l++) for (let c = 0; c < N; c++) if (regioes[l][c] === r) casas.push(k(l, c));
+    u.push({ tipo: "regiao", id: r, casas });
+  }
+  return u;
+}
+const nome = u => u.tipo === "regiao" ? `a região ${nomeCor[u.id]}` : `a ${u.tipo} ${u.id + 1}`;
+function nomes(lista) {
+  const t = lista[0].tipo;
+  const ids = lista.map(u => t === "regiao" ? nomeCor[u.id] : u.id + 1);
+  const junto = ids.length === 1 ? ids[0] : ids.slice(0, -1).join(", ") + " e " + ids.at(-1);
+  const plural = { linha: "linhas", coluna: "colunas", regiao: "regiões" }[t];
+  return lista.length === 1 ? nome(lista[0]) : `as ${plural} ${junto}`;
+}
+function seAtacam(a, b) {
+  const [l1, c1] = lc(a), [l2, c2] = lc(b);
+  if (a === b) return false;
+  return l1 === l2 || c1 === c2 || regioes[l1][c1] === regioes[l2][c2] ||
+    (Math.abs(l1 - l2) <= 1 && Math.abs(c1 - c2) <= 1);
+}
+function combinacoes(lista, t) {
+  if (t === 0) return [[]];
+  const out = [];
+  lista.forEach((x, i) => combinacoes(lista.slice(i + 1), t - 1).forEach(r => out.push([x, ...r])));
+  return out;
+}
+
+function acharDica(estado) {
+  const val = s => { const [l, c] = lc(s); return estado[l][c]; };
+  const gatos = [];
+  for (let l = 0; l < N; l++) for (let c = 0; c < N; c++) if (estado[l][c] === "gato") gatos.push(k(l, c));
+  const livre = s => val(s) === "" && !gatos.some(g => seAtacam(g, s));
+  const todas = unidades();
+  const abertas = todas.filter(u => !u.casas.some(s => val(s) === "gato"));
+  const livres = u => u.casas.filter(livre);
+  // casas vazias que já não podem ter gato por causa de um gato posto (mostra como ✕ vermelho)
+  const bloqueadas = u => u.casas.filter(s => val(s) === "" && !livre(s));
+
+  // 1) Um ✕ foi posto onde tem gato
+  for (let l = 0; l < N; l++) if (estado[l][resposta[l]] === "x") {
+    return { texto: "Um dos seus ✕ está numa casa que tem gato. Vou tirar esse ✕.",
+      alvo: [k(l, resposta[l])], area: [], marcarX: [], acao: { tirarX: k(l, resposta[l]) } };
+  }
+
+  // 2) Uma linha, coluna ou região com uma casa livre só
+  const ordem = [...abertas.filter(u => u.tipo === "regiao"), ...abertas.filter(u => u.tipo !== "regiao")];
+  for (const u of ordem) {
+    const f = livres(u);
+    if (f.length === 1) {
+      const bl = bloqueadas(u);
+      return {
+        texto: `${cap(em(nome(u)))} só sobrou uma casa onde cabe gato` +
+          (bl.length ? ` — as casas com ✕ vermelho estão na mesma linha, coluna ou cor de um gato, ou encostam nele` : "") +
+          `. Então o gato ${u.tipo === "regiao" ? "dessa cor" : "dela"} tem que ficar aqui.`,
+        area: u.casas, alvo: f, marcarX: bl, acao: { gato: f[0] },
+      };
+    }
+  }
+
+  // 3) Regiões presas em linhas/colunas (e vice-versa): k grupos com k lugares
+  const pares = [["regiao", "linha"], ["regiao", "coluna"], ["linha", "regiao"], ["coluna", "regiao"], ["linha", "coluna"], ["coluna", "linha"]];
+  for (let t = 1; t <= 3; t++) for (const [ta, tb] of pares) {
+    const As = abertas.filter(u => u.tipo === ta);
+    const Bs = abertas.filter(u => u.tipo === tb);
+    for (const grupo of combinacoes(As, t)) {
+      const casasA = grupo.flatMap(livres);
+      if (!casasA.length) continue;
+      const alcancados = Bs.filter(b => casasA.some(s => b.casas.includes(s)));
+      if (alcancados.length !== t) continue;
+      const sobra = alcancados.flatMap(livres).filter(s => !casasA.includes(s));
+      if (!sobra.length) continue;
+      const texto = t === 1
+        ? `Todas as casas livres ${de(nome(grupo[0]))} ficam ${em(nome(alcancados[0]))}. ` +
+          `Então o gato ${de(nome(alcancados[0]))} vai ser o ${ta === "regiao" ? "dessa cor" : "dela"}, ` +
+          `e as casas com ✕ vermelho não podem ter gato.`
+        : `${cap(nomes(grupo))} só têm casas livres ${em(nomes(alcancados))}. ` +
+          `São ${t} gatos para ${t} lugares, então ${nomes(alcancados)} ficam ocupadas por eles ` +
+          `e as casas com ✕ vermelho não podem ter gato.`;
+      return { texto, area: casasA, alvo: [], marcarX: sobra, acao: { marcar: sobra } };
+    }
+  }
+
+  // 4) Pôr gato aqui deixaria alguém sem lugar
+  for (let l = 0; l < N; l++) for (let c = 0; c < N; c++) {
+    const p = k(l, c);
+    if (!livre(p)) continue;
+    for (const u of abertas) {
+      if (u.casas.includes(p)) continue;
+      const f = livres(u);
+      if (f.length && f.every(s => seAtacam(p, s))) {
+        return {
+          texto: `Se tivesse gato na casa com ✕ vermelho, ${nome(u)} ficaria sem lugar: ` +
+            `todas as casas livres dela encostam nessa casa ou estão na mesma linha, coluna ou cor. Então ali não tem gato.`,
+          area: f, alvo: [], marcarX: [p], acao: { marcar: [p] },
+        };
+      }
+    }
+  }
+
+  // 5) Nenhum raciocínio curto: mostra um gato
+  for (let l = 0; l < N; l++) if (estado[l][resposta[l]] !== "gato") {
+    return { texto: "Aqui não achei um raciocínio curto. Vou mostrar onde fica um gato.",
+      area: [], alvo: [k(l, resposta[l])], marcarX: [], acao: { gato: k(l, resposta[l]) } };
+  }
+  return null;
+}
+const cap = s => s[0].toUpperCase() + s.slice(1);
+const em = s => s.replace(/^(as?) /, "n$1 ");  // a linha → na linha
+const de = s => "d" + s;                       // a linha → da linha
+</script>
+
+<script>
+let estado, coracoes, historico, dicaAtual = null;
+const grade = document.getElementById("grade");
+const aviso = document.getElementById("aviso");
+grade.style.setProperty("--n", N);
+const textoInicial = "Dois toques põem um gato. Um toque (ou arrastar) marca ✕.";
+
+function novo() {
+  estado = Array.from({ length: N }, () => Array(N).fill(""));
+  coracoes = 3; historico = [];
+  desenhar(); avisar(textoInicial);
+}
+function avisar(t) { aviso.textContent = t; }
+
+function desenhar() {
+  dicaAtual = null;
+  grade.classList.remove("com-dica");
+  grade.innerHTML = "";
+  for (let l = 0; l < N; l++) for (let c = 0; c < N; c++) {
+    const d = document.createElement("div");
+    d.className = "casa " + estado[l][c];
+    d.dataset.l = l; d.dataset.c = c;
+    const r = regioes[l][c];
+    d.style.background = cores[r];
+    // borda grossa e escura entre cores diferentes; fina e clara dentro da mesma cor
+    const lado = (nome, ol, oc) => {
+      if (regioes[ol]?.[oc] === undefined) return;
+      const outra = regioes[ol][oc] !== r;
+      d.style[`border${nome}Width`] = outra ? "1.5px" : "0.5px";
+      d.style[`border${nome}Color`] = outra ? "#3b2f2a" : "#3b2f2a33";
+    };
+    lado("Top", l - 1, c); lado("Bottom", l + 1, c); lado("Left", l, c - 1); lado("Right", l, c + 1);
+    grade.appendChild(d);
+  }
+  document.getElementById("coracoes").textContent = "❤️".repeat(coracoes) + "🤍".repeat(3 - coracoes);
+}
+const casaEl = s => { const [l, c] = lc(s); return grade.children[l * N + c]; };
+
+function guardar() { historico.push(estado.map(l => [...l])); }
+
+function porGato(l, c) {
+  if (resposta[l] === c) {
+    estado[l][c] = "gato";
+    // modo preguiça: marca ✕ em todas as casas vazias que este gato bloqueia
+    if (preguica) for (let ol = 0; ol < N; ol++) for (let oc = 0; oc < N; oc++)
+      if (estado[ol][oc] === "" && seAtacam(k(l, c), k(ol, oc))) estado[ol][oc] = "x";
+    desenhar();
+    const total = estado.flat().filter(v => v === "gato").length;
+    if (total === N) mostrar(`<div class="grande">🎉🐱</div>Todos os gatos têm seu cantinho!<br><br><button onclick="fechar();novo()">Próxima fase</button>`);
+    else avisar(`Isso! Faltam ${N - total} gatos.`);
+  } else {
+    coracoes--;
+    desenhar();
+    casaEl(k(l, c)).classList.add("errado");
+    setTimeout(() => casaEl(k(l, c)).classList.remove("errado"), 500);
+    if (coracoes <= 0) setTimeout(() => mostrar(`<div class="grande">😿</div>Acabaram os corações.<br><br><button onclick="fechar();novo()">Tentar de novo</button>`), 600);
+    else avisar("Aqui não tem gato. Perdeu 1 coração.");
+  }
+}
+
+function mostrar(html) { document.getElementById("caixa").innerHTML = html; document.getElementById("tampa").classList.add("ver"); }
+function fechar() { document.getElementById("tampa").classList.remove("ver"); }
+
+// ---- Toque: 1 toque/arrastar = ✕, 2 toques = gato ----
+let ultimo = { l: -1, c: -1, t: 0 }, arrasto = null;
+function casaEm(x, y) {
+  const el = document.elementFromPoint(x, y);
+  return el && el.classList.contains("casa") ? { l: +el.dataset.l, c: +el.dataset.c } : null;
+}
+grade.addEventListener("pointerdown", e => {
+  const p = casaEm(e.clientX, e.clientY); if (!p) return;
+  const agora = Date.now();
+  if (estado[p.l][p.c] === "gato") return;
+  if (p.l === ultimo.l && p.c === ultimo.c && agora - ultimo.t < 350) {
+    // segundo toque: desfaz o ✕ do primeiro e tenta pôr gato
+    estado = historico.pop(); ultimo.t = 0; arrasto = null;
+    guardar(); porGato(p.l, p.c);
+    return;
+  }
+  ultimo = { ...p, t: agora };
+  guardar();
+  const modo = estado[p.l][p.c] === "x" ? "" : "x";
+  estado[p.l][p.c] = modo; arrasto = modo;
+  desenhar();
+  if (aviso.querySelector("button")) avisar(textoInicial);
+});
+grade.addEventListener("pointermove", e => {
+  if (arrasto === null) return;
+  const p = casaEm(e.clientX, e.clientY); if (!p) return;
+  if (estado[p.l][p.c] !== "gato" && estado[p.l][p.c] !== arrasto) {
+    estado[p.l][p.c] = arrasto; desenhar();
+  }
+});
+addEventListener("pointerup", () => arrasto = null);
+
+document.getElementById("desfazer").onclick = () => { if (historico.length) { estado = historico.pop(); desenhar(); avisar(textoInicial); } };
+document.getElementById("limparX").onclick = () => { guardar(); estado = estado.map(l => l.map(v => v === "x" ? "" : v)); desenhar(); };
+document.getElementById("recomecar").onclick = novo;
+
+// ---- Modo preguiça (fica lembrado no aparelho) ----
+let preguica = localStorage.getItem("miaudoku-preguica") === "1";
+const botaoPreguica = document.getElementById("preguica");
+function mostrarPreguica() {
+  botaoPreguica.title = preguica ? "Modo preguiça: ligado" : "Modo preguiça: desligado";
+  botaoPreguica.classList.toggle("ligado", preguica);
+}
+botaoPreguica.onclick = () => {
+  preguica = !preguica;
+  localStorage.setItem("miaudoku-preguica", preguica ? "1" : "0");
+  mostrarPreguica();
+  avisar(preguica ? "Modo preguiça ligado: ao acertar um gato, o jogo marca ✕ em todas as casas que ele bloqueia."
+                  : "Modo preguiça desligado: você marca os ✕ do seu jeito.");
+};
+mostrarPreguica();
+
+document.getElementById("dica").onclick = () => {
+  desenhar();
+  const d = acharDica(estado);
+  if (!d) return;
+  d.area.forEach(s => casaEl(s).classList.add("dica-area"));
+  d.alvo.forEach(s => casaEl(s).classList.add("dica-alvo"));
+  d.marcarX.forEach(s => casaEl(s).classList.add("dica-x"));
+  dicaAtual = d;
+  grade.classList.add("com-dica");
+  aviso.innerHTML = "";
+  aviso.append("💡 " + d.texto, document.createElement("br"));
+  const b = document.createElement("button");
+  b.textContent = "Fazer para mim";
+  b.onclick = () => {
+    const a = d.acao; guardar();
+    if (a.tirarX) { const [l, c] = lc(a.tirarX); estado[l][c] = ""; desenhar(); avisar(textoInicial); }
+    if (a.marcar) { a.marcar.forEach(s => { const [l, c] = lc(s); estado[l][c] = "x"; }); desenhar(); avisar(textoInicial); }
+    if (a.gato) { const [l, c] = lc(a.gato); porGato(l, c); }
+  };
+  aviso.append(b);
+};
+novo();
+</script>
+</body>
+</html>

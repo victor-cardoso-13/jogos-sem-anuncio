@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// Regras dos "Jogos sem anúncio".
+// Cada jogador só lê e escreve as PRÓPRIAS coisas. Todo o resto fica trancado.
+//
+//   jogadores/{uid}                 → perfil do jogador (ex.: nome)
+//   jogadores/{uid}/jogos/{jogo}    → progresso de cada jogo (ex.: "miaudoku", "mexe-mexe")
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function ehDono(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /jogadores/{uid} {
+      allow read, write: if ehDono(uid);
+
+      match /jogos/{jogo} {
+        // nome do jogo: só letras minúsculas, números e hífen (até 30)
+        allow read, delete: if ehDono(uid);
+        allow create, update: if ehDono(uid)
+          && jogo.matches('^[a-z0-9-]{1,30}$');
+      }
+    }
+  }
+}
