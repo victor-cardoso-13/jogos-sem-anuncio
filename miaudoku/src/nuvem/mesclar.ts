@@ -6,6 +6,9 @@
 import type { Marca } from '../motor/dica.ts';
 import type { ProgressoTamanho, Salvo } from '../ui/salvar.ts';
 
+/** Versões antigas guardavam a preguiça como sim/não: "sim" vira o modo 1. */
+export const modoPreguica = (v: unknown): number => (v === true ? 1 : v === 2 ? 2 : v === 1 ? 1 : 0);
+
 /** Um tamanho na nuvem. As marcas viram um texto curto: "." vazio, "x" ✕, "g" gato. */
 export interface TamanhoNuvem {
   rodada: number;
@@ -18,7 +21,8 @@ export interface TamanhoNuvem {
 
 export interface DadosNuvem {
   versao: 1;
-  preguica: boolean;
+  /** 0, 1 ou 2 (documentos antigos podem ter true/false) */
+  preguica: number | boolean;
   preguicaEm: number;
   tamanhos: Record<string, TamanhoNuvem>;
 }
@@ -55,7 +59,7 @@ export function daNuvem(d: DadosNuvem): Salvo {
         : { jogo: null }),
     };
   }
-  return { preguica: d.preguica, preguicaEm: d.preguicaEm, tamanhos };
+  return { preguica: modoPreguica(d.preguica), preguicaEm: d.preguicaEm, tamanhos };
 }
 
 /** Quem está mais adiante: mais rodadas, depois fase maior, depois a mudança mais recente. */

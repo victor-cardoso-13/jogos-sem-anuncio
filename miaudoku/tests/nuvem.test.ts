@@ -3,7 +3,7 @@ import { daNuvem, iguais, mesclar, paraNuvem } from '../src/nuvem/mesclar.ts';
 import type { ProgressoTamanho, Salvo } from '../src/ui/salvar.ts';
 
 const tam = (fase: number, extra: Partial<ProgressoTamanho> = {}): ProgressoTamanho => ({ fase, jogo: null, atualizadoEm: 0, ...extra });
-const salvo = (tamanhos: Record<number, ProgressoTamanho>, preguica = false, preguicaEm = 0): Salvo => ({ preguica, preguicaEm, tamanhos });
+const salvo = (tamanhos: Record<number, ProgressoTamanho>, preguica = 0, preguicaEm = 0): Salvo => ({ preguica, preguicaEm, tamanhos });
 
 describe('formato da nuvem', () => {
   it('ida e volta mantém fase, marcas e corações (o "Desfazer" não vai)', () => {
@@ -13,7 +13,7 @@ describe('formato da nuvem', () => {
         jogo: { marcas: ['', 'x', 'gato', ''], coracoes: 2, historico: [['', '', '', '']] },
       }),
       9: tam(3),
-    }, true, 9);
+    }, 2, 9);
     const volta = daNuvem(paraNuvem(s));
     expect(volta.tamanhos[7].fase).toBe(12);
     expect(volta.tamanhos[7].jogo?.marcas).toEqual(['', 'x', 'gato', '']);
@@ -21,7 +21,7 @@ describe('formato da nuvem', () => {
     expect(volta.tamanhos[7].jogo?.historico).toEqual([]);
     expect(volta.tamanhos[7].faseTexto).toBe('abc|0');
     expect(volta.tamanhos[9].jogo).toBeNull();
-    expect(volta.preguica).toBe(true);
+    expect(volta.preguica).toBe(2);
     expect(iguais(s, volta)).toBe(true);
   });
 
@@ -61,8 +61,22 @@ describe('juntar aparelho e nuvem', () => {
   });
 
   it('modo preguiça: vale o que foi mudado por último', () => {
-    expect(mesclar(salvo({}, true, 5), salvo({}, false, 9)).preguica).toBe(false);
-    expect(mesclar(salvo({}, true, 9), salvo({}, false, 5)).preguica).toBe(true);
+    expect(mesclar(salvo({}, 1, 5), salvo({}, 0, 9)).preguica).toBe(0);
+    expect(mesclar(salvo({}, 2, 9), salvo({}, 0, 5)).preguica).toBe(2);
+  });
+
+  it('nuvem antiga (preguiça sim/não) vira modo 1 ou 0', () => {
+    const antigo = { versao: 1 as const, preguica: true, preguicaEm: 1, tamanhos: {} };
+    expect(daNuvem(antigo).preguica).toBe(1);
+    expect(daNuvem({ ...antigo, preguica: false }).preguica).toBe(0);
+  });
+
+  it('"Zerar progresso" (rodada nova em todos) não é desfeito pela nuvem nem por outro aparelho', () => {
+    const zerado = salvo({ 5: tam(0, { rodada: 1, atualizadoEm: 50 }), 9: tam(0, { rodada: 3, atualizadoEm: 50 }) });
+    const outroAparelho = salvo({ 5: tam(500, { rodada: 0, atualizadoEm: 99 }), 9: tam(40, { rodada: 2, atualizadoEm: 99 }) });
+    const j = mesclar(outroAparelho, zerado);
+    expect(j.tamanhos[5].fase).toBe(0);
+    expect(j.tamanhos[9].fase).toBe(0);
   });
 
   it('não mexe nas cópias originais', () => {
