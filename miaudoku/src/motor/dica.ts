@@ -35,17 +35,25 @@ export interface Dica {
   /** casas que não podem ter gato (✕ vermelho) */
   marcarX: number[];
   acao: { gato?: number; marcar?: number[]; tirarX?: number };
+  /** linhas e colunas citadas no texto (a tela mostra os números delas em destaque) */
+  citadas: { linhas: number[]; colunas: number[] };
 }
 
 // ---- Nomes em português ----
 
-const nome = (u: Unidade) => u.tipo === 'regiao' ? `a região ${CORES[u.id].nome}` : `a ${u.tipo} ${u.id + 1}`;
+// O texto da dica é mostrado como HTML: os nomes das linhas, colunas e cores vão em negrito.
+const nome = (u: Unidade) => u.tipo === 'regiao' ? `a <b>região ${CORES[u.id].nome}</b>` : `a <b>${u.tipo} ${u.id + 1}</b>`;
+const X_VERMELHO = '<b class="vermelho">✕ vermelho</b>';
+const citar = (us: Unidade[]) => ({
+  linhas: us.filter(u => u.tipo === 'linha').map(u => u.id),
+  colunas: us.filter(u => u.tipo === 'coluna').map(u => u.id),
+});
 const PLURAL: Record<TipoUnidade, string> = { linha: 'linhas', coluna: 'colunas', regiao: 'regiões' };
 
 function nomes(lista: Unidade[]) {
   if (lista.length === 1) return nome(lista[0]);
   const ids = lista.map(u => u.tipo === 'regiao' ? CORES[u.id].nome : String(u.id + 1));
-  return `as ${PLURAL[lista[0].tipo]} ${ids.slice(0, -1).join(', ')} e ${ids[ids.length - 1]}`;
+  return `as <b>${PLURAL[lista[0].tipo]} ${ids.slice(0, -1).join(', ')} e ${ids[ids.length - 1]}</b>`;
 }
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 /** "a linha" → "na linha", "as linhas" → "nas linhas" */
@@ -76,7 +84,7 @@ export function acharDica(f: Fase, marcas: Marca[]): Dica | null {
   const livres = (u: Unidade) => u.casas.filter(livre);
   const bloqueadas = (u: Unidade) => u.casas.filter(s => marcas[s] === '' && !livre(s));
   const dica = (d: Partial<Dica> & Pick<Dica, 'tipo' | 'texto' | 'acao'>): Dica =>
-    ({ grau: 0, area: [], alvo: [], marcarX: [], ...d });
+    ({ grau: 0, area: [], alvo: [], marcarX: [], citadas: { linhas: [], colunas: [] }, ...d });
 
   // 1) Um ✕ foi posto onde tem gato
   for (let s = 0; s < total; s++) {
@@ -95,9 +103,9 @@ export function acharDica(f: Fase, marcas: Marca[]): Dica | null {
     return dica({
       tipo: 'unica',
       texto: `${cap(em(nome(u)))} só sobrou uma casa onde cabe gato` +
-        (bl.length ? ' — as casas com ✕ vermelho estão na mesma linha, coluna ou cor de um gato, ou encostam nele' : '') +
+        (bl.length ? ` — as casas com ${X_VERMELHO} estão na mesma linha, coluna ou cor de um gato, ou encostam nele` : '') +
         `. Então o gato ${u.tipo === 'regiao' ? 'dessa cor' : 'dela'} tem que ficar aqui.`,
-      area: u.casas, alvo: f1, marcarX: bl, acao: { gato: f1[0] },
+      area: u.casas, alvo: f1, marcarX: bl, acao: { gato: f1[0] }, citadas: citar([u]),
     });
   }
 
@@ -116,11 +124,11 @@ export function acharDica(f: Fase, marcas: Marca[]): Dica | null {
         const texto = k === 1
           ? `Todas as casas livres ${de(nome(grupo[0]))} ficam ${em(nome(alcancados[0]))}. ` +
             `Então o gato ${de(nome(alcancados[0]))} vai ser o ${ta === 'regiao' ? 'dessa cor' : 'dela'}, ` +
-            'e as casas com ✕ vermelho não podem ter gato.'
+            `e as casas com ${X_VERMELHO} não podem ter gato.`
           : `${cap(nomes(grupo))} só têm casas livres ${em(nomes(alcancados))}. ` +
             `São ${k} gatos para ${k} lugares, então ${nomes(alcancados)} ficam ocupadas por eles ` +
-            'e as casas com ✕ vermelho não podem ter gato.';
-        return dica({ tipo: 'presa', grau: k, texto, area: casasA, marcarX: sobra, acao: { marcar: sobra } });
+            `e as casas com ${X_VERMELHO} não podem ter gato.`;
+        return dica({ tipo: 'presa', grau: k, texto, area: casasA, marcarX: sobra, acao: { marcar: sobra }, citadas: citar([...grupo, ...alcancados]) });
       }
     }
   }
@@ -134,9 +142,9 @@ export function acharDica(f: Fase, marcas: Marca[]): Dica | null {
       if (f1.length && f1.every(s => seAtacam(f, p, s))) {
         return dica({
           tipo: 'semLugar',
-          texto: `Se tivesse gato na casa com ✕ vermelho, ${nome(u)} ficaria sem lugar: ` +
+          texto: `Se tivesse gato na casa com ${X_VERMELHO}, ${nome(u)} ficaria sem lugar: ` +
             'todas as casas livres dela encostam nessa casa ou estão na mesma linha, coluna ou cor. Então ali não tem gato.',
-          area: f1, marcarX: [p], acao: { marcar: [p] },
+          area: f1, marcarX: [p], acao: { marcar: [p] }, citadas: citar([u]),
         });
       }
     }

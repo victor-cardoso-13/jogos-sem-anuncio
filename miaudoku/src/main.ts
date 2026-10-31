@@ -120,7 +120,11 @@ function mostrarJogo() {
 function atualizar() {
   if (!jogo) return;
   dicaAtual = null;
-  app.querySelector('#cartao-dica')?.remove();
+  if (app.querySelector('#cartao-dica')) {
+    app.querySelector('#cartao-dica')!.remove();
+    app.classList.remove('com-dica');
+    requestAnimationFrame(encaixar); // a barra volta: a grade se ajusta de novo
+  }
   const grade = $('#grade');
   grade.classList.remove('com-dica');
   grade.querySelectorAll<HTMLElement>('.casa').forEach((el, s) => {
@@ -153,8 +157,26 @@ function encaixar() {
   const grade = app.querySelector<HTMLElement>('#grade');
   const palco = app.querySelector<HTMLElement>('#palco');
   if (!grade || !palco) return;
-  const lado = Math.max(160, Math.min(palco.clientWidth, palco.clientHeight - 8, 640));
+  // durante a dica, sobra espaço em volta da grade para os números das linhas e colunas
+  const folga = dicaAtual ? 26 : 0;
+  const lado = Math.max(160, Math.min(palco.clientWidth - 2 * folga, palco.clientHeight - 8 - 2 * folga, 640));
   grade.style.setProperty('--lado', `${Math.floor(lado)}px`);
+  palco.querySelectorAll('.regua').forEach(r => r.remove());
+  if (dicaAtual) desenharReguas(palco, grade, dicaAtual);
+}
+
+/** Números das colunas (em cima) e das linhas (à esquerda); os citados na dica ficam em dourado. */
+function desenharReguas(palco: HTMLElement, grade: HTMLElement, d: Dica) {
+  const g = grade.getBoundingClientRect(), p = palco.getBoundingClientRect();
+  const borda = 3, passo = (g.width - 2 * borda) / n;
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const col = d.citadas.colunas.includes(i) ? ' citada' : '';
+    const lin = d.citadas.linhas.includes(i) ? ' citada' : '';
+    html += `<span class="regua${col}" style="left:${g.left - p.left + borda + passo * i}px;top:${g.top - p.top - 24}px;width:${passo}px"><i>${i + 1}</i></span>`;
+    html += `<span class="regua lado${lin}" style="left:${g.left - p.left - 26}px;top:${g.top - p.top + borda + passo * i}px;height:${passo}px"><i>${i + 1}</i></span>`;
+  }
+  palco.insertAdjacentHTML('beforeend', html);
 }
 addEventListener('resize', encaixar);
 
@@ -312,10 +334,10 @@ function mostrarDica() {
   d.alvo.forEach(s => el(s).classList.add('dica-alvo'));
   d.marcarX.forEach(s => el(s).classList.add('dica-x'));
   dicaAtual = d;
-  // o cartão fica do lado oposto ao da dica, para não tapar as casas destacadas
-  const casas = [...d.alvo, ...d.marcarX, ...d.area];
-  const linhaMedia = casas.reduce((t, c) => t + Math.floor(c / n), 0) / Math.max(1, casas.length);
-  app.insertAdjacentHTML('beforeend', htmlCartaoDica(d.texto, linhaMedia >= n / 2));
+  // a dica entra no lugar da barra de baixo: nada fica por cima da grade
+  app.classList.add('com-dica');
+  app.insertAdjacentHTML('beforeend', htmlCartaoDica(d.texto));
+  encaixar();
   $('#fazer-dica').onclick = () => fazerDica(d);
   $('#fechar-dica').onclick = () => atualizar();
 }
