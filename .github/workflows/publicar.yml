@@ -29,10 +29,19 @@ jobs:
         with:
           node-version: 26
           cache: npm
-          cache-dependency-path: miaudoku/package-lock.json
+          cache-dependency-path: |
+            miaudoku/package-lock.json
+            mexe-mexe/package-lock.json
 
       - name: "Miaudoku: instalar, testar e montar"
         working-directory: miaudoku
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: "Mexe-Mexe: instalar, testar e montar"
+        working-directory: mexe-mexe
         run: |
           npm ci
           npm test
@@ -43,6 +52,7 @@ jobs:
           mkdir -p _site
           cp site/index.html _site/
           cp -r miaudoku/dist _site/miaudoku
+          cp -r mexe-mexe/dist _site/mexe-mexe
 
       - uses: actions/upload-pages-artifact@v3
         with:
