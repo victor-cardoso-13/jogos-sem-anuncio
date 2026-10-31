@@ -5,6 +5,7 @@
  */
 import type { Marca } from '../motor/dica.ts';
 import type { ProgressoTamanho, Salvo } from '../ui/salvar.ts';
+import { idGatinho } from '../ui/gatinhos.ts';
 
 /** Versões antigas guardavam a preguiça como sim/não: "sim" vira o modo 1. */
 export const modoPreguica = (v: unknown): number => (v === true ? 1 : v === 2 ? 2 : v === 1 ? 1 : 0);
@@ -24,6 +25,9 @@ export interface DadosNuvem {
   /** 0, 1 ou 2 (documentos antigos podem ter true/false) */
   preguica: number | boolean;
   preguicaEm: number;
+  /** gatinho escolhido (documentos antigos não têm: vale o padrão) */
+  gatinho?: string;
+  gatinhoEm?: number;
   tamanhos: Record<string, TamanhoNuvem>;
 }
 
@@ -43,7 +47,7 @@ export function paraNuvem(s: Salvo): DadosNuvem {
       atualizadoEm: p.atualizadoEm ?? 0,
     };
   }
-  return { versao: 1, preguica: s.preguica, preguicaEm: s.preguicaEm ?? 0, tamanhos };
+  return { versao: 1, preguica: s.preguica, preguicaEm: s.preguicaEm ?? 0, gatinho: idGatinho(s.gatinho), gatinhoEm: s.gatinhoEm ?? 0, tamanhos };
 }
 
 export function daNuvem(d: DadosNuvem): Salvo {
@@ -59,7 +63,7 @@ export function daNuvem(d: DadosNuvem): Salvo {
         : { jogo: null }),
     };
   }
-  return { preguica: modoPreguica(d.preguica), preguicaEm: d.preguicaEm, tamanhos };
+  return { preguica: modoPreguica(d.preguica), preguicaEm: d.preguicaEm, gatinho: idGatinho(d.gatinho), gatinhoEm: d.gatinhoEm ?? 0, tamanhos };
 }
 
 /** Quem está mais adiante: mais rodadas, depois fase maior, depois a mudança mais recente. */
@@ -79,9 +83,12 @@ export function mesclar(a: Salvo, b: Salvo): Salvo {
     tamanhos[n] = structuredClone(pa && pb ? maisAdiante(pa, pb) : pa ?? pb);
   }
   const preguicaDeB = (b.preguicaEm ?? 0) > (a.preguicaEm ?? 0);
+  const gatinhoDeB = (b.gatinhoEm ?? 0) > (a.gatinhoEm ?? 0);
   return {
     preguica: preguicaDeB ? b.preguica : a.preguica,
     preguicaEm: Math.max(a.preguicaEm ?? 0, b.preguicaEm ?? 0),
+    gatinho: idGatinho(gatinhoDeB ? b.gatinho : a.gatinho),
+    gatinhoEm: Math.max(a.gatinhoEm ?? 0, b.gatinhoEm ?? 0),
     tamanhos,
   };
 }

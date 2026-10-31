@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Miaudoku – mock do gatinho</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px 24px 60px; background: #e9e2d6; font-family: Nunito, system-ui, sans-serif; color: #3b2f2a; }
+  h1.pagina { font-family: Fredoka; font-weight: 700; margin: 0 0 4px; }
+  .explica { margin: 0 0 22px; opacity: .7; max-width: 900px; line-height: 1.5; }
+  .linha { display: flex; gap: 30px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 40px; }
+  .rotulo-mock { font-family: Fredoka; font-weight: 600; font-size: 17px; margin: 0 0 4px; }
+  .nota-mock { font-size: 13px; opacity: .7; max-width: 340px; margin: 0 0 10px; line-height: 1.4; }
+
+  /* ---------- moldura de celular ---------- */
+  .cel {
+    width: 340px; height: 720px; border-radius: 44px; padding: 12px; background: #1f1a17;
+    box-shadow: 0 20px 50px #0003; flex: none;
+  }
+  .tela {
+    width: 100%; height: 100%; border-radius: 34px; overflow: hidden; position: relative;
+    background: radial-gradient(circle at 50% 0%, #fffaf2, #f6eee2 70%);
+    display: flex; flex-direction: column; align-items: center; padding: 34px 16px 18px; gap: 12px;
+  }
+
+  /* ---------- fontes do título (comparação) ---------- */
+  .fontes { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 30px; }
+  .fonte { background: #fbf6ee; border-radius: 20px; padding: 18px 26px; text-align: center; box-shadow: 0 2px 10px #3b2f2a14; }
+  .fonte .t { font-size: 42px; line-height: 1.1; }
+  .fonte small { display: block; margin-top: 6px; font-size: 13px; opacity: .6; }
+
+  /* ---------- título em blocos ---------- */
+  .blocos { display: flex; gap: 4px; margin-top: 8px; }
+  .blocos span {
+    width: 34px; height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    font-family: Fredoka; font-weight: 700; font-size: 25px; color: #3b2f2a;
+    box-shadow: inset 0 -3px 0 #3b2f2a22;
+  }
+  .sub { font-size: 11px; font-weight: 800; letter-spacing: 2.5px; opacity: .45; margin-top: -2px; }
+
+  /* ---------- botão de conta ---------- */
+  .contapill {
+    position: absolute; top: 14px; right: 14px; display: flex; align-items: center; gap: 6px;
+    background: #fff; border-radius: 99px; padding: 6px 12px 6px 8px; font-size: 13px; font-weight: 700;
+    box-shadow: 0 2px 8px #3b2f2a14;
+  }
+  .contapill svg { width: 18px; height: 18px; }
+  .avatar { width: 22px; height: 22px; border-radius: 50%; background: #f3c969; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+
+  svg.ic { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- cartões opção A ---------- */
+  .lista { width: 100%; display: flex; flex-direction: column; gap: 9px; margin-top: 4px; }
+  .card {
+    display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 20px; padding: 10px 12px 10px 10px;
+    box-shadow: 0 2px 10px #3b2f2a10;
+  }
+  .card .prev { flex: none; }
+  .card .meio { flex: 1; min-width: 0; }
+  .card .tam { font-family: Fredoka; font-weight: 700; font-size: 20px; line-height: 1; }
+  .chip { display: inline-block; font-size: 9.5px; font-weight: 800; letter-spacing: 1px; padding: 3px 7px; border-radius: 99px; margin-left: 6px; vertical-align: 3px; }
+  .barra-prog { height: 5px; border-radius: 99px; background: #f0e8dc; margin-top: 8px; overflow: hidden; }
+  .barra-prog div { height: 100%; border-radius: 99px; background: #e7a400; }
+  .card .fase { text-align: right; font-size: 10px; font-weight: 800; letter-spacing: 1px; opacity: .55; line-height: 1.2; }
+  .card .fase b { display: block; font-family: Fredoka; font-size: 19px; letter-spacing: 0; opacity: 1; color: #3b2f2a; }
+  .card .seta { width: 18px; height: 18px; opacity: .35; flex: none; }
+
+  /* ---------- cartões opção B (mosaico 2 colunas) ---------- */
+  .mosaico { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ladrilho { background: #fff; border-radius: 22px; padding: 12px; box-shadow: 0 2px 10px #3b2f2a10; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .ladrilho .tam { font-family: Fredoka; font-weight: 700; font-size: 19px; line-height: 1; }
+  .ladrilho .info { font-size: 11px; font-weight: 700; opacity: .55; }
+  .titulo-b { font-family: 'Lilita One'; font-size: 46px; letter-spacing: 1px; margin-top: 10px; line-height: 1; display: flex; align-items: center; gap: 8px; }
+  .titulo-b svg { width: 38px; height: 38px; }
+
+  /* ---------- grade ---------- */
+  .grade { display: grid; border: 2.5px solid #3b2f2a; overflow: hidden; background: #fbf6ee; flex: none; position: relative; }
+  .casa { position: relative; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .casa.x::before, .casa.x::after {
+    content: ""; position: absolute; left: 31%; top: 46%; width: 38%; height: 8%; min-height: 2px;
+    background: var(--corx, #2a201c); opacity: .82; border-radius: 99px; transform: rotate(45deg);
+  }
+  .casa.x::after { transform: rotate(-45deg); }
+  .casa.vermelho { --corx: #d0473c; }
+  .casa.gato::after { content: "🐱"; }
+  .grade.dica .casa:not(.area):not(.alvo):not(.vermelho) { opacity: .5; filter: saturate(.45) brightness(1.05); }
+  .casa.alvo { box-shadow: inset 0 0 0 3px #e7a400; }
+
+  /* ---------- barra superior nova ---------- */
+  .topo { width: 100%; display: grid; grid-template-columns: 64px 1fr 64px; align-items: center; margin-top: 2px; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10.5px; font-weight: 700; }
+  .item .bola { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .item .bola svg { width: 23px; height: 23px; }
+  .item .rot { opacity: .65; }
+  .centro { text-align: center; }
+  .centro .f { font-family: Fredoka; font-weight: 700; font-size: 27px; letter-spacing: 1.5px; line-height: 1; }
+  .vidas { display: flex; gap: 1px; height: 42px; align-items: center; }
+  .vidas svg { width: 17px; height: 17px; }
+  .vidas .cheio { fill: #e5484d; stroke: #e5484d; }
+  .vidas .vazio { fill: none; stroke: #3b2f2a55; }
+
+  /* ---------- barra inferior (a que já existe) ---------- */
+  .inferior { width: 100%; display: flex; justify-content: space-between; margin-top: auto; }
+  .inferior .item .bola svg { width: 22px; height: 22px; }
+  .inferior .ligado .bola { background: #f3c969; }
+
+  /* ---------- aviso rápido (some sozinho) ---------- */
+  .toast {
+    position: absolute; left: 50%; transform: translateX(-50%); background: #3b2f2a; color: #fff;
+    font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 99px; white-space: nowrap;
+    box-shadow: 0 6px 18px #0003; display: flex; align-items: center; gap: 6px; z-index: 2;
+  }
+  .toast svg { width: 15px; height: 15px; }
+
+  /* ---------- cartão da dica ---------- */
+  .cartao-dica {
+    position: absolute; left: 12px; right: 12px; bottom: 92px; background: #fff; border-radius: 22px; padding: 14px 16px;
+    box-shadow: 0 12px 34px #3b2f2a33; display: flex; flex-direction: column; gap: 10px; z-index: 2;
+  }
+  .cartao-dica .cab { display: flex; align-items: center; gap: 8px; font-family: Fredoka; font-weight: 700; font-size: 16px; letter-spacing: 1px; }
+  .cartao-dica .lamp { width: 30px; height: 30px; border-radius: 50%; background: #f3c969; display: flex; align-items: center; justify-content: center; }
+  .cartao-dica .lamp svg { width: 18px; height: 18px; }
+  .cartao-dica p { margin: 0; font-size: 14px; line-height: 1.45; }
+  .cartao-dica .bts { display: flex; gap: 8px; }
+  .bt { flex: 1; text-align: center; font-weight: 800; font-size: 14px; padding: 11px; border-radius: 99px; background: #3b2f2a; color: #fff; }
+  .bt.claro { background: #f0e8dc; color: #3b2f2a; }
+
+  /* ---------- tutorial ---------- */
+  .tut { padding: 30px 22px 22px; gap: 14px; }
+  .pular { position: absolute; top: 18px; right: 18px; font-size: 13px; font-weight: 800; color: #b07a00; text-decoration: underline; text-underline-offset: 3px; }
+  .pontos { display: flex; gap: 6px; margin-top: 18px; }
+  .pontos i { width: 7px; height: 7px; border-radius: 99px; background: #3b2f2a33; }
+  .pontos i.on { width: 22px; background: #e7a400; }
+  .tut h2 { font-family: Fredoka; font-weight: 700; font-size: 25px; letter-spacing: 1px; margin: 6px 0 0; text-align: center; line-height: 1.15; }
+  .tut p { margin: 0; text-align: center; font-size: 15px; line-height: 1.5; opacity: .8; }
+  .tut .bts { width: 100%; display: flex; gap: 10px; margin-top: auto; }
+  .dedo { position: absolute; font-size: 34px; animation: toque 2.2s infinite; z-index: 3; }
+  @keyframes toque {
+    0%, 15% { transform: translate(0, 0) scale(1); }
+    20% { transform: translate(0, 0) scale(.85); } 25% { transform: translate(0, 0) scale(1); }
+    30% { transform: translate(0, 0) scale(.85); } 35%, 100% { transform: translate(0, 0) scale(1); }
+  }
+  .aparece::after { content: "🐱"; animation: gato 2.2s infinite; }
+  @keyframes gato { 0%, 34% { opacity: 0; scale: .3; } 42%, 90% { opacity: 1; scale: 1; } 100% { opacity: 0; } }
+  .passos { font-size: 13px; line-height: 1.6; max-width: 340px; margin: 0; padding-left: 18px; }
+</style>
+<style>
+  .opcoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; }
+  .opcao { background: #fbf6ee; border-radius: 26px; padding: 18px; box-shadow: 0 2px 12px #3b2f2a14; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .opcao h3 { margin: 0; font-family: Fredoka; font-weight: 700; font-size: 20px; }
+  .opcao p { margin: 0; font-size: 13px; opacity: .7; text-align: center; line-height: 1.4; min-height: 54px; }
+  .grande-gato { display: flex; gap: 14px; align-items: center; }
+  .grande-gato .fundo { width: 84px; height: 84px; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
+  .grande-gato svg { width: 64px; height: 64px; }
+  .casa svg.gatinho { width: 74%; height: 74%; }
+  .casa.fantasma svg.gatinho { opacity: .35; }
+  .casa.fantasma { box-shadow: inset 0 0 0 3px #e7a400; }
+  .casa.errado svg.gatinho { opacity: .55; }
+  .legenda { font-size: 11px; font-weight: 700; opacity: .55; display: flex; gap: 16px; }
+  .hoje { font-size: 64px; line-height: 1; }
+</style>
+</head>
+<body>
+<h1 class="pagina">Miaudoku — novo gatinho</h1>
+<p class="explica">O emoji 🐱 amarelo foge das cores do jogo. Aqui estão 4 gatinhos desenhados no estilo do jogo
+(o mesmo marrom dos traços e das bordas). Cada opção aparece grande e aplicada numa fase 6×6 de verdade,
+com ✕, um gato errado tremendo (clarinho) e uma casa da <b>preguiça 2</b> (borda dourada).</p>
+
+<div class="opcoes" id="opcoes"></div>
+
+<script>
+const CORES = ['#f4c6cc', '#c4dcf2', '#f7e3a3', '#cde8c6', '#ddd0f3', '#f8d0aa', '#bfe4de', '#dddad5', '#ead8c3', '#e0e3b4'];
+const NIVEIS = { 5: ['FÁCIL', '#cde8c6', '#2e6b2e'], 6: ['MÉDIO', '#f7e3a3', '#7a5b00'], 7: ['MÉDIO', '#f7e3a3', '#7a5b00'], 8: ['DIFÍCIL', '#f8d0aa', '#8a4b12'], 9: ['MUITO DIFÍCIL', '#f4c6cc', '#8e2b3a'], 10: ['DESAFIO', '#ddd0f3', '#5b3b94'] };
+const FASE_ATUAL = { 5: 24, 6: 7, 7: 4, 8: 1, 9: 1, 10: 1 };
+
+const ICONES = {
+  casa: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/>',
+  coracao: '<path d="M12 20s-7-4.4-9-9.2C1.7 7.4 4 4.5 7.1 4.5c2 0 3.6 1.2 4.9 3 1.3-1.8 2.9-3 4.9-3 3.1 0 5.4 2.9 4.1 6.3C19 15.6 12 20 12 20z"/>',
+  desfazer: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  apagar: '<path d="M7 21h10"/><path d="m14.5 4.5 5 5-9.5 9.5H6l-2.5-2.5a1.5 1.5 0 0 1 0-2.1z"/><path d="m9 10 5 5"/>',
+  dica: '<path d="M9 18h6"/><path d="M10 21.5h4"/><path d="M12 2.5a6.5 6.5 0 0 0-3.8 11.8c.5.4.8 1 .8 1.6V16h6v-.1c0-.6.3-1.2.8-1.6A6.5 6.5 0 0 0 12 2.5z"/>',
+  recomecar: '<path d="M3 12a9 9 0 1 0 2.8-6.5L3 8"/><path d="M3 3v5h5"/>',
+  preguica: '<path d="M20.5 13.5A8.5 8.5 0 1 1 10.5 3.5a6.5 6.5 0 0 0 10 10z"/>',
+  seta: '<path d="m9 6 6 6-6 6"/>',
+  gato: '<path d="M5 20v-9.5L3.5 4 8 7a9.5 9.5 0 0 1 8 0l4.5-3L19 10.5V20"/><path d="M5 20h14"/><circle cx="9.3" cy="13" r=".9" fill="currentColor"/><circle cx="14.7" cy="13" r=".9" fill="currentColor"/><path d="M11 16.2h2l-1 1z"/>',
+};
+const ic = (nome, cls = 'ic') => `<svg class="${cls}" viewBox="0 0 24 24">${ICONES[nome]}</svg>`;
+
+function grade(txt, lado, { gatos = [], xs = [], vermelhos = [], area = null, alvo = [], dica = false, raio = 14 } = {}) {
+  const [r] = txt.split('|'); const n = Math.round(Math.sqrt(r.length));
+  const L = 'abcdefghij';
+  const g = document.createElement('div');
+  g.className = 'grade' + (dica ? ' dica' : '');
+  Object.assign(g.style, { width: lado + 'px', height: lado + 'px', gridTemplateColumns: `repeat(${n},1fr)`, gridTemplateRows: `repeat(${n},1fr)`, borderRadius: raio + 'px' });
+  for (let s = 0; s < n * n; s++) {
+    const l = Math.floor(s / n), c = s % n, reg = r[s];
+    const d = document.createElement('div');
+    d.className = 'casa' + (gatos.includes(s) ? ' gato' : '') + (xs.includes(s) ? ' x' : '') + (vermelhos.includes(s) ? ' x vermelho' : '') +
+      (area && area.includes(s) ? ' area' : '') + (alvo.includes(s) ? ' alvo' : '');
+    d.style.background = CORES[L.indexOf(reg)];
+    d.style.fontSize = (lado / n * .6) + 'px';
+    g.appendChild(d);
+  }
+  // Linhas desenhadas de uma vez só por cima (sem furinhos nas quinas):
+  // finas e claras dentro da mesma cor; grossas e escuras entre cores diferentes.
+  const finas = [], grossas = [];
+  for (let l = 0; l < n; l++) for (let c = 0; c < n; c++) {
+    const s = l * n + c;
+    if (c < n - 1) (r[s] !== r[s + 1] ? grossas : finas).push(`M${c + 1} ${l}V${l + 1}`);
+    if (l < n - 1) (r[s] !== r[s + n] ? grossas : finas).push(`M${c} ${l + 1}H${c + 1}`);
+  }
+  const grosso = lado > 120 ? 2.6 : 1.6;
+  g.insertAdjacentHTML('beforeend', `<svg viewBox="0 0 ${n} ${n}" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none">
+    <path d="${finas.join('')}" stroke="#3b2f2a" stroke-opacity=".16" stroke-width=".6" vector-effect="non-scaling-stroke" fill="none"/>
+    <path d="${grossas.join('')}" stroke="#3b2f2a" stroke-width="${grosso}" stroke-linecap="round" vector-effect="non-scaling-stroke" fill="none"/>
+  </svg>`);
+  return g;
+}
+const resp = txt => { const [, s] = txt.split('|'); return [...s].map((c, l) => l * s.length + Number(c)); };
+
+
+const CABECA = 'M4.6 9.6 5.2 3.6 9.3 6.4Q12 5.6 14.7 6.4L18.8 3.6 19.4 9.6Q21 12.2 20.5 15.1 19.6 20.3 12 20.6 4.4 20.3 3.5 15.1 3 12.2 4.6 9.6Z';
+const GATOS = {
+  traco: {
+    nome: 'A · Traço', texto: 'Só o contorno, igual aos ícones da barra de baixo. Leve e elegante.',
+    svg: `<svg class="gatinho" viewBox="0 0 24 24"><path d="${CABECA}" fill="none" stroke="#3b2f2a" stroke-width="1.7" stroke-linejoin="round"/>
+      <circle cx="9.2" cy="12.6" r="1.05" fill="#3b2f2a"/><circle cx="14.8" cy="12.6" r="1.05" fill="#3b2f2a"/>
+      <path d="M11.2 14.9h1.6l-.8.9z" fill="#3b2f2a"/><path d="M12 15.8q-.9 1.1-2 .5M12 15.8q.9 1.1 2 .5" fill="none" stroke="#3b2f2a" stroke-width="1.1" stroke-linecap="round"/></svg>`,
+  },
+  chapado: {
+    nome: 'B · Silhueta escura', texto: 'Cabeça cheia no marrom do jogo, olhinhos creme e nariz rosa. Se destaca em qualquer cor, até nas grades pequenas.',
+    svg: `<svg class="gatinho" viewBox="0 0 24 24"><path d="${CABECA}" fill="#3b2f2a"/>
+      <ellipse cx="9.2" cy="12.4" rx="1.25" ry="1.45" fill="#fbf6ee"/><ellipse cx="14.8" cy="12.4" rx="1.25" ry="1.45" fill="#fbf6ee"/>
+      <path d="M11.1 14.9h1.8l-.9 1z" fill="#f4a7b0"/></svg>`,
+  },
+  creme: {
+    nome: 'C · Creme com contorno', texto: 'Rostinho creme com contorno marrom, bochechas rosadas e bigodes. Mais "fofo", jeito de figurinha.',
+    svg: `<svg class="gatinho" viewBox="0 0 24 24"><path d="${CABECA}" fill="#fffaf2" stroke="#3b2f2a" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M6.3 6.6 6.6 9M17.7 6.6 17.4 9" stroke="#f4a7b0" stroke-width="1.3" stroke-linecap="round"/>
+      <circle cx="9.2" cy="12.6" r="1.05" fill="#3b2f2a"/><circle cx="14.8" cy="12.6" r="1.05" fill="#3b2f2a"/>
+      <circle cx="7.6" cy="15" r="1.1" fill="#f4c6cc"/><circle cx="16.4" cy="15" r="1.1" fill="#f4c6cc"/>
+      <path d="M11.2 14.6h1.6l-.8.9z" fill="#e5848f"/>
+      <path d="M2.6 14.2 6 14.8M2.9 16.6 6.1 15.9M21.4 14.2 18 14.8M21.1 16.6 17.9 15.9" stroke="#3b2f2a" stroke-width=".8" stroke-linecap="round"/></svg>`,
+  },
+  sentado: {
+    nome: 'D · Gatinho sentado', texto: 'O corpo inteiro, sentado, com rabinho. Silhueta marrom. Fica com cara de "este cantinho é meu".',
+    svg: `<svg class="gatinho" viewBox="0 0 24 24"><path d="M7.3 3.2 9 6.6Q11 6 13 6.6L14.7 3.2 15.4 8Q16.6 9.6 15.9 11.4 18.3 13.8 18 17.9 17.8 20.8 15.2 20.8H8.6Q5.9 20.8 6 18 6.1 14.2 8.1 11.6 7 9.8 7.9 8Z" fill="#3b2f2a"/>
+      <path d="M17.4 19.6Q21.8 19.8 21 15.2" fill="none" stroke="#3b2f2a" stroke-width="1.8" stroke-linecap="round"/>
+      <ellipse cx="10" cy="9.6" rx=".85" ry="1" fill="#fbf6ee"/><ellipse cx="13" cy="9.6" rx=".85" ry="1" fill="#fbf6ee"/>
+      <path d="M10.9 11h1.2l-.6.7z" fill="#f4a7b0"/></svg>`,
+  },
+};
+// fase 6×6 de verdade
+const F6 = "aabbbbabbcddebbbddbbbbddbbbdddbbbffd|130524";
+const r6 = resp(F6);
+const box = document.getElementById('opcoes');
+box.insertAdjacentHTML('beforeend', `<div class="opcao"><h3>Hoje · emoji</h3><div class="grande-gato"><div class="fundo" style="background:#f4c6cc"><span class="hoje">🐱</span></div><div class="fundo" style="background:#c4dcf2"><span class="hoje">🐱</span></div></div><p>O emoji muda de jeito em cada aparelho (iPhone, Android, computador) e o amarelo briga com as cores pastel.</p><div id="g-hoje"></div></div>`);
+const gh = grade(F6, 260, { gatos: [r6[0], r6[2]], xs: [0, 2, 3, 6, 7, 8, 9, 10, 11, 14, 15, 16, 17] });
+gh.children[r6[4]].classList.add('fantasma');
+document.getElementById('g-hoje').appendChild(gh);
+for (const [id, g] of Object.entries(GATOS)) {
+  box.insertAdjacentHTML('beforeend', `<div class="opcao"><h3>${g.nome}</h3>
+    <div class="grande-gato"><div class="fundo" style="background:#f4c6cc">${g.svg}</div><div class="fundo" style="background:#c4dcf2">${g.svg}</div><div class="fundo" style="background:#f7e3a3">${g.svg}</div></div>
+    <p>${g.texto}</p><div id="g-${id}"></div>
+    <div class="legenda"><span>gato posto</span><span>gato errado</span><span>preguiça 2</span></div></div>`);
+  const gr = grade(F6, 260, { xs: [0, 2, 3, 6, 7, 8, 9, 10, 11, 14, 15, 16, 17] });
+  for (const s of [r6[0], r6[2]]) gr.children[s].insertAdjacentHTML('beforeend', g.svg);
+  gr.children[r6[4]].classList.add('fantasma'); gr.children[r6[4]].insertAdjacentHTML('beforeend', g.svg);
+  gr.children[33].classList.add('errado'); gr.children[33].insertAdjacentHTML('beforeend', g.svg);
+  document.getElementById('g-' + id).appendChild(gr);
+}
+</script>
+</body>
+</html>

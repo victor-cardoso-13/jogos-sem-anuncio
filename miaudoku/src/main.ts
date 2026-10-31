@@ -7,8 +7,9 @@ import type { Fase } from './motor/fase.ts';
 import { acharDica, type Dica } from './motor/dica.ts';
 import { apagarTodosX, casasSoCabeUm, definirX, desfazer, gatosPostos, guardar, novoJogo, porGato, type Jogo } from './motor/jogo.ts';
 import { FASES_POR_TAMANHO, FOLGA_DUPLO_TOQUE, TAMANHOS, TEMPO_DUPLO_TOQUE_MS } from './motor/regras.ts';
-import { htmlBotaoPreguica, htmlCartaoDica, htmlConta, htmlInicio, htmlJanela, htmlJogo, icone, montarGrade, textoSituacao } from './ui/desenho.ts';
+import { htmlBotaoPreguica, htmlCartaoDica, htmlConta, htmlEscolhaGatinho, htmlInicio, htmlJanela, htmlJogo, icone, montarGrade, textoSituacao } from './ui/desenho.ts';
 import { abrirTutorial, jaViuTutorial } from './ui/tutorial.ts';
+import { aplicarGatinho, idGatinho, svgGatinho } from './ui/gatinhos.ts';
 import { carregarFase } from './ui/pacotes.ts';
 import { carregar, progresso, salvar, tocar } from './ui/salvar.ts';
 import {
@@ -45,6 +46,7 @@ function mostrarInicio(buscarNuvem = true) {
 
 function desenharInicio() {
   if (tela !== 'inicio' || app.querySelector('#tampa')) return; // não apaga uma janela aberta
+  aplicarGatinho(idGatinho(salvo.gatinho)); // o progresso pode ter trocado (conta, nuvem)
   app.innerHTML = htmlInicio(salvo, usuarioAtual()?.email ?? null, situacaoAtual());
   app.querySelectorAll<HTMLElement>('[data-tamanho]').forEach(b => {
     b.onclick = () => abrirTamanho(Number(b.dataset.tamanho));
@@ -267,7 +269,7 @@ function venceu() {
   tocar(salvo, n);
   salvar(salvo);
   const ultima = p.fase >= FASES_POR_TAMANHO;
-  setTimeout(() => janela('🎉🐱', `Fase ${numero + 1} concluída!`, 'Todos os gatos têm seu cantinho.', [
+  setTimeout(() => janela('🎉' + svgGatinho(idGatinho(salvo.gatinho)), `Fase ${numero + 1} concluída!`, 'Todos os gatos têm seu cantinho.', [
     ultima
       ? { id: 'j-inicio', rotulo: 'Voltar ao início', acao: mostrarInicio }
       : { id: 'j-proxima', rotulo: 'Próxima fase', acao: () => abrirTamanho(n) },
@@ -455,16 +457,36 @@ function abrirMenuConta() {
   const u = usuarioAtual();
   const comoJogar = { id: 'j-tutorial', rotulo: 'Como jogar', claro: true, acao: () => { desenharInicio(); abrirTutorial(document.body); } };
   const zerar = { id: 'j-zerar', rotulo: 'Zerar progresso', claro: true, acao: confirmarZerar };
+  const gatinho = { id: 'j-gatinho', rotulo: 'Escolher gatinho', claro: true, acao: escolherGatinho };
   const fechar = { id: 'j-fechar', rotulo: 'Fechar', claro: true, acao: desenharInicio };
   if (!u) {
     janela('☁️', 'Sua conta', 'Sem conta, o seu progresso fica só neste aparelho. Com uma conta, ele fica guardado na nuvem.', [
-      { id: 'j-entrar', rotulo: 'Entrar ou criar conta', acao: abrirConta }, comoJogar, zerar, fechar,
+      { id: 'j-entrar', rotulo: 'Entrar ou criar conta', acao: abrirConta }, gatinho, comoJogar, zerar, fechar,
     ]);
   } else {
     janela('👤', escapar(u.email), textoSituacao(situacaoAtual()), [
-      comoJogar, zerar, { id: 'j-sair-conta', rotulo: 'Sair da conta', claro: true, acao: confirmarSair }, fechar,
+      gatinho, comoJogar, zerar, { id: 'j-sair-conta', rotulo: 'Sair da conta', claro: true, acao: confirmarSair }, fechar,
     ]);
   }
+}
+
+/** Janela para escolher o desenho do gatinho (vale na hora, e fica salvo com o progresso). */
+function escolherGatinho() {
+  app.querySelector('#tampa')?.remove();
+  app.insertAdjacentHTML('beforeend', htmlEscolhaGatinho(idGatinho(salvo.gatinho)));
+  app.querySelectorAll<HTMLElement>('[data-gatinho]').forEach(b => {
+    b.onclick = () => {
+      salvo.gatinho = idGatinho(b.dataset.gatinho);
+      salvo.gatinhoEm = Date.now();
+      salvar(salvo);
+      aplicarGatinho(idGatinho(salvo.gatinho));
+      app.querySelectorAll('[data-gatinho]').forEach(o => o.classList.toggle('escolhido', o === b));
+    };
+  });
+  $('#j-gatinho-pronto').onclick = () => {
+    app.querySelector('#tampa')?.remove();
+    desenharInicio();
+  };
 }
 
 /**
@@ -487,7 +509,7 @@ function confirmarZerar() {
       salvar(salvo);
       void enviarAgora(); // zerar é importante: vai para a nuvem na hora, sem esperar
       desenharInicio();
-      janela('🐱', 'Progresso zerado', 'Tudo de volta para a Fase 1. Bom jogo!', [{ id: 'j-ok', rotulo: 'Ok', acao: desenharInicio }]);
+      janela(svgGatinho(idGatinho(salvo.gatinho)), 'Progresso zerado', 'Tudo de volta para a Fase 1. Bom jogo!', [{ id: 'j-ok', rotulo: 'Ok', acao: desenharInicio }]);
     } },
     { id: 'j-zerar-nao', rotulo: 'Cancelar', claro: true, acao: desenharInicio },
   ]);
@@ -500,6 +522,7 @@ function confirmarSair() {
   ]);
 }
 
+aplicarGatinho(idGatinho(salvo.gatinho));
 mostrarInicio(false);
 if (!jaViuTutorial()) abrirTutorial(document.body);
 void iniciarNuvem({

@@ -5,6 +5,7 @@ import { CORES, FASES_POR_TAMANHO, TAMANHOS } from '../motor/regras.ts';
 import type { Fase } from '../motor/fase.ts';
 import { progresso, type Salvo } from './salvar.ts';
 import type { Situacao } from '../nuvem/sincronia.ts';
+import { GATINHOS, svgGatinho, type IdGatinho } from './gatinhos.ts';
 
 // ---------------------------------------------------------------------------
 // Ícones de traço (o mesmo estilo em todas as telas)
@@ -203,5 +204,20 @@ export function htmlConta() {
         <button class="link" type="button" id="esqueci">Esqueci a senha</button>
         <button class="link" type="button" id="fechar-conta">Agora não</button>
       </form>
+    </div>`;
+}
+
+/** Janela "Escolha o seu gatinho": os 4 desenhos, o escolhido com borda. */
+export function htmlEscolhaGatinho(atual: IdGatinho) {
+  const botoes = (Object.keys(GATINHOS) as IdGatinho[]).map(id => `
+    <button data-gatinho="${id}" class="${id === atual ? 'escolhido' : ''}">${svgGatinho(id)}${GATINHOS[id].nome}</button>`).join('');
+  return `
+    <div class="tampa" id="tampa">
+      <div class="caixa">
+        <h3>Escolha o seu gatinho</h3>
+        <p>Ele aparece na grade, nas dicas e no tutorial.</p>
+        <div class="escolha-gatinho">${botoes}</div>
+        <button class="botao" id="j-gatinho-pronto">Pronto</button>
+      </div>
     </div>`;
 }
