@@ -168,3 +168,12 @@ Todas essas decisões ficam em `src/motor/regras.ts`, comentadas com exemplos.
 - **Ícone do app sem programa de desenho:** um SVG numa página HTML, fotografado pelo Playwright em 512, 192 e 180 px.
 - **Duas conversas do Claude ao mesmo tempo** (uma no Miaudoku, outra no Mexe-Mexe): no commit, adicionar só os arquivos do próprio jogo, **nunca `git add -A`**.
 - **No iPhone, cada jogo posto na Tela de Início guarda as suas coisas separado.** É preciso entrar na conta uma vez em cada jogo. No Safari normal, entrar num jogo já vale para o outro.
+
+## 12. O que o Mexe-Mexe ensinou sobre visual, tutorial e áreas de soltar (31/10/2026)
+
+- **Dois visuais por ajuste** ("Melhor idade" = padrão, "Bonito"): mesmo HTML, o CSS muda com `body.idade` / `body.bonito`. Melhor idade = cartas com borda preta, botões grandes com o nome escrito, carta escolhida com moldura azul, sem animação. Bonito = sombras, ícones de traço com nome pequeno. Mock aprovado antes (`mexe-mexe/scripts/mock-visual.html`).
+- **Tutorial em vez de textão na faixa:** 7 passos curtos, aparece na 1ª partida, **"Pular" sempre visível**, e pode ser revisto em Ajustes → Como jogar. A faixa de aviso fica só com frases curtas. No celular deitado o tutorial vira duas colunas (desenho + texto).
+- **Sem botão fixo "Novo jogo":** ele virou um **espaço pontilhado na mesa** (aparece com carta escolhida ou arrastando) e um botão **"Baixar jogo"** (lugar fixo, na linha "Suas cartas") para 3 cartas que formam jogo. O botão não repete regra: pergunta ao motor se `moverCartas` para jogo novo é permitido.
+- **Armadilha:** se a área de soltar só existe durante o arrasto, descubra *onde soltou* **antes** de esconder a área (senão o "alvo" vem vazio e nada acontece). Testar o arrasto de verdade (mouse no Playwright), não só o toque.
+- **Mesa cheia no celular:** o espaço vazio fica no fim da mesa, que rola; pode ficar fora da vista até rolar.
+- Testes de tela: o script `mexe-mexe/scripts/prints.mjs` tira os prints nos 4 tamanhos (iPad e iPhone, em pé e deitado) nos dois visuais. A mesa dos prints é montada.
