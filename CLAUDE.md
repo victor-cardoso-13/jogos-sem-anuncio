@@ -11,10 +11,14 @@
 - Na página inicial do site (`site/index.html`), o link do Miaudoku pode apontar direto para
   `https://victor-cardoso-13.github.io/miaudoku/` (o antigo também funciona, porque redireciona).
 
+**O Mexe-Mexe também saiu daqui** (31/10/2026): pasta `/Users/victor/Desktop/Jogos/mexe-mexe`,
+repositório https://github.com/victor-cardoso-13/mexe-mexe → https://victor-cardoso-13.github.io/mexe-mexe/
+(a pasta `Computador/mexe-mexe/` só publica o aviso de mudança, como a do Miaudoku). **Não mexa no jogo aqui.**
+
 ## Por que a mudança
 As conversas dos dois jogos usavam a mesma cópia do repositório: quando uma trocava de ramo para
 fazer um PR, os arquivos da outra mudavam por baixo dela. **Cada jogo com o seu repositório evita isso.**
-Sugestão para o Mexe-Mexe (decisão do Victor): fazer o mesmo — pasta `Jogos/mexe-mexe` com repositório próprio.
+Cada jogo tem pasta e repositório próprios.
 
 ## O que continua aqui (vale para todos os jogos)
 - `firestore.rules`, `firebase.json`, `.firebaserc`: regras do Firebase (projeto `jogos-sem-anuncio`).
