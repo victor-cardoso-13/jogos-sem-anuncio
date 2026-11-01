@@ -177,3 +177,15 @@ Todas essas decisões ficam em `src/motor/regras.ts`, comentadas com exemplos.
 - **Armadilha:** se a área de soltar só existe durante o arrasto, descubra *onde soltou* **antes** de esconder a área (senão o "alvo" vem vazio e nada acontece). Testar o arrasto de verdade (mouse no Playwright), não só o toque.
 - **Mesa cheia no celular:** o espaço vazio fica no fim da mesa, que rola; pode ficar fora da vista até rolar.
 - Testes de tela: o script `mexe-mexe/scripts/prints.mjs` tira os prints nos 4 tamanhos (iPad e iPhone, em pé e deitado) nos dois visuais. A mesa dos prints é montada.
+
+## 13. Depois de usar de verdade (Mexe-Mexe, 01/11/2026)
+
+- **Cada jogo com pasta e repositório próprios** (`Jogos/miaudoku`, `Jogos/mexe-mexe`); `Computador/` fica só com o que é comum. Para mudar um jogo de repositório: `git subtree split -P <pasta> -b x` mantém o histórico; criar o repo com `gh repo create`, ligar o Pages (`gh api -X POST repos/.../pages -f build_type=workflow`) e deixar no endereço antigo um **aviso** (página que redireciona + `sw.js` que desinstala o app antigo). O progresso salvo (localStorage, login) é por domínio, então não se perde.
+- **Texto comprido dentro da mesa encolhe as cartas:** o rótulo de erro de cada jogo (posição absoluta, sem quebra de linha) contava como "transbordou" e o encaixe reduzia as cartas ao mínimo. Regra: nada com largura própria dentro da mesa; o motivo do erro vai na faixa de aviso e no jogo só um "!".
+- **Soltar cartas:** o fundo da mesa inteiro é "jogo novo" para quem arrasta (não só um quadradinho). Tocar no fundo não faz nada (engano).
+- **Escolher cartas da mesa:** tocar em outra carta da mesa só escolhe (não move); mover é pelo "+" no canto do jogo. Com só cartas da mão escolhidas, tocar no jogo ainda move (atalho do dia a dia).
+- **Mesa que se arruma sozinha:** jogo que deixou de valer mas separa em jogos válidos (3-4-5-2-A-3 → A-2-3 + 3-4-5) é separado na hora, sem separar as 3 cartas baixadas da mão.
+- **Rolagem da mesa no celular** deve ser guardada antes de redesenhar e restaurada depois (senão volta ao topo a cada toque).
+- **Se o navegador recarrega a página**, o jogo deve voltar para a tela em que estava (guardar a tela), não para o início.
+- **Campeonato até 100 pontos** (modo opcional; padrão casual): quem ganha a rodada fica com 0, quem perde soma os pontos da mão; chegou a 100 perde; empate no menor total = mais uma rodada. Soma uma vez só por partida (identidade da partida).
+- No fim da partida, mostrar **a mão do adversário** e os pontos.
