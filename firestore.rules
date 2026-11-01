@@ -5,6 +5,10 @@ rules_version = '2';
 //
 //   jogadores/{uid}                 → perfil do jogador (ex.: nome)
 //   jogadores/{uid}/jogos/{jogo}    → progresso de cada jogo (ex.: "miaudoku", "mexe-mexe")
+//   salas/{codigo}                  → sala do Mexe-Mexe online (o que todos da sala veem)
+//   salas/{codigo}/maos/{uid}       → a mão de cada pessoa: SÓ a dona lê
+//   salas/{codigo}/reveladas/{uid}  → a mão mostrada no fim da rodada
+//   salas/{codigo}/pendentes/{uid}  → cartas compradas pelo jogo por quem demorou
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -20,6 +24,41 @@ service cloud.firestore {
         allow read, delete: if ehDono(uid);
         allow create, update: if ehDono(uid)
           && jogo.matches('^[a-z0-9-]{1,30}$');
+      }
+    }
+
+    // ----- Mexe-Mexe online (jogo de família: quem está na sala é de confiança; estranhos ficam de fora) -----
+    match /salas/{codigo} {
+      function sala() { return get(/databases/$(database)/documents/salas/$(codigo)).data; }
+      function logado() { return request.auth != null; }
+      function membro() { return logado() && request.auth.uid in sala().uids; }
+
+      // Quem sabe o código (o link) pode ver a sala e entrar. Ninguém consegue listar as salas.
+      allow get: if logado();
+      allow create: if logado()
+        && request.resource.data.dono == request.auth.uid
+        && request.resource.data.uids == [request.auth.uid]
+        && request.resource.data.fase == 'espera';
+      allow update: if logado() && (
+        request.auth.uid in resource.data.uids
+        || (resource.data.fase == 'espera'
+            && request.resource.data.uids.size() <= 4
+            && request.resource.data.uids.size() == resource.data.uids.size() + 1
+            && request.auth.uid in request.resource.data.uids
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['jogadores', 'uids', 'cartas', 'totais'])));
+      allow delete: if logado() && resource.data.dono == request.auth.uid;
+
+      match /maos/{uid} {
+        allow read: if logado() && request.auth.uid == uid;
+        // o criador da sala também escreve (é ele quem distribui as cartas)
+        allow write: if logado() && (request.auth.uid == uid || sala().dono == request.auth.uid);
+      }
+      match /reveladas/{uid} {
+        allow read: if membro();
+        allow write: if logado() && request.auth.uid == uid;
+      }
+      match /pendentes/{uid} {
+        allow read, write: if membro();
       }
     }
   }
