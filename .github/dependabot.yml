@@ -1,0 +1,7 @@
+# O GitHub avisa (e abre um pedido pronto) quando uma ação usada na publicação ganha versão nova. Grátis.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
