@@ -27,6 +27,118 @@ service cloud.firestore {
       }
     }
 
+    // ----- Acabou! (lista de mercado do casal) -----
+    // UM documento por casa. Só quem tem o e-mail do login na lista "membros" lê e escreve (no máximo 4 pessoas).
+    // Ninguém consegue procurar nem listar casas. Para entrar é preciso um CONVITE de quem já é da casa, e o
+    // convite tem duas travas: o código (10 símbolos, vale 2 dias, uma vez só) E o e-mail certo (o da conta
+    // de quem foi convidada). Digitar o e-mail de alguém numa lista não dá acesso a nada.
+    // O e-mail do login vem do Firebase Auth (sempre minúsculo); o app grava os e-mails em minúsculas.
+    // LIMITE DESTAS REGRAS: o Firestore não deixa "olhar dentro" de cada produto, então o tamanho de cada nome
+    // só é conferido pelo app; aqui se confere o formato do documento e a quantidade de cada lista.
+    // O que cada membro consegue fazer: ver e mudar tudo da casa (produtos, corredores, categorias) e convidar
+    // (até 4 pessoas no total). Não consegue apagar a casa, mexer na lista de membros à mão, nem mexer em outra casa.
+    function comEmail() { return request.auth != null && request.auth.token.email != null; }
+    function casaDe(id) { return get(/databases/$(database)/documents/casas/$(id)).data; }
+    function eMembroDe(dados) { return comEmail() && request.auth.token.email in dados.membros; }
+
+    match /casas/{casaId} {
+      function emailOk(m) { return m is string && m.size() >= 3 && m.size() <= 120 && m == m.lower(); }
+      function membrosOk(m) {
+        return m is list && m.size() >= 1 && m.size() <= 4
+          && emailOk(m[0])
+          && (m.size() < 2 || emailOk(m[1]))
+          && (m.size() < 3 || emailOk(m[2]))
+          && (m.size() < 4 || emailOk(m[3]));
+      }
+      function formatoOk(d) {
+        return d.keys().hasOnly(['membros', 'corredores', 'categorias', 'itens', 'noMercado', 'nomes', 'aprender'])
+          && d.keys().hasAll(['membros', 'corredores', 'categorias', 'itens', 'noMercado', 'nomes', 'aprender'])
+          && membrosOk(d.membros)
+          && d.corredores is list && d.corredores.size() <= 40
+          && d.categorias is list && d.categorias.size() <= 40
+          && d.itens is map && d.itens.size() <= 400
+          && d.noMercado is map && d.noMercado.size() <= 4
+          && d.nomes is map && d.nomes.size() <= 4
+          && d.aprender is bool;
+      }
+      function entradaDepois() {
+        return getAfter(/databases/$(database)/documents/casas/$(casaId)/entradas/$(request.auth.uid)).data;
+      }
+
+      // Ler (um documento ou procurar "as casas em que o meu e-mail está").
+      allow read: if eMembroDe(resource.data);
+      // Criar: a casa nasce só com quem está criando.
+      allow create: if comEmail()
+        && formatoOk(request.resource.data)
+        && request.resource.data.membros == [request.auth.token.email];
+      allow update: if formatoOk(request.resource.data) && (
+        // Quem é da casa mexe em tudo, MENOS na lista de membros (ela só cresce pelo convite).
+        (eMembroDe(resource.data) && request.resource.data.membros == resource.data.membros)
+        // Entrar com convite: só o próprio e-mail entra, no fim da lista, e só junto da "entrada" validada
+        // pelo convite (a entrada e o convite gasto vão na MESMA gravação).
+        || (comEmail() && !(request.auth.token.email in resource.data.membros)
+          && resource.data.membros.size() < 4
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['membros'])
+          && request.resource.data.membros == resource.data.membros.concat([request.auth.token.email])
+          && entradaDepois().email == request.auth.token.email));
+      allow delete: if false;
+
+      // Registro de quem entrou com convite. Só se cria com um convite válido para este e-mail e esta casa.
+      match /entradas/{uid} {
+        function convite() { return get(/databases/$(database)/documents/convites/$(request.resource.data.codigo)).data; }
+        allow create: if comEmail() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['codigo', 'email'])
+          && request.resource.data.codigo is string
+          && request.resource.data.email == request.auth.token.email
+          && convite().casaId == casaId
+          && convite().email == request.auth.token.email
+          && request.time < convite().criadoEm + duration.value(2, 'd');
+        allow read, update, delete: if false;
+      }
+    }
+
+    // Convites: o nome do documento É o código. Só o e-mail convidado lê (get, sabendo o código); ninguém lista.
+    match /convites/{codigo} {
+      allow get: if comEmail() && resource.data.email == request.auth.token.email;
+      allow list: if false;
+      allow create: if comEmail()
+        && codigo.matches('^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{10}$')
+        && request.resource.data.keys().hasOnly(['casaId', 'email', 'por', 'criadoEm'])
+        && request.resource.data.casaId is string
+        && request.resource.data.email is string && request.resource.data.email.size() <= 120
+        && request.resource.data.email == request.resource.data.email.lower()
+        && request.resource.data.por == request.auth.token.email
+        && request.resource.data.criadoEm == request.time
+        && eMembroDe(casaDe(request.resource.data.casaId))
+        && casaDe(request.resource.data.casaId).membros.size() < 4;
+      // Gastar o convite (quem foi convidada) ou cancelar (quem é da casa).
+      allow delete: if comEmail() && (resource.data.email == request.auth.token.email || eMembroDe(casaDe(resource.data.casaId)));
+      allow update: if false;
+    }
+
+    // ----- Sugestões dos jogadores ("Dar sugestão" dentro de cada jogo) -----
+    // Quem tem conta (com e-mail) só consegue CRIAR uma sugestão em seu próprio nome: o uid e o e-mail têm de
+    // ser os do login, o jogo tem de ser um nome válido, o texto de 5 a 1000 letras e a data é a do servidor.
+    // Pelo app NINGUÉM lê, muda nem apaga sugestões (nem a própria). O Victor lê pelo console do Firebase ou
+    // pelo script ler-sugestoes.mjs (acesso de administrador, que não passa por estas regras).
+    // "diario" (opcional; hoje só o Mexe-Mexe manda): as últimas jogadas do aparelho, em texto, até 250 mil letras
+    // (bem abaixo do limite de 1 MB de um documento). Só cartas, mesa e tipo de aparelho; nada pessoal.
+    // LIMITE: não há trava de quantidade; quem tem conta poderia mandar muitas. Pior caso: estoura a cota
+    // grátis do dia e as gravações param (sem cobrança, plano Spark).
+    match /sugestoes/{id} {
+      allow create: if comEmail()
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'jogo', 'texto', 'criadoEm', 'diario'])
+        && (!('diario' in request.resource.data)
+          || (request.resource.data.diario is string && request.resource.data.diario.size() <= 250000))
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.jogo is string && request.resource.data.jogo.matches('^[a-z0-9-]{1,30}$')
+        && request.resource.data.texto is string
+        && request.resource.data.texto.size() >= 5 && request.resource.data.texto.size() <= 1000
+        && request.resource.data.criadoEm == request.time;
+      allow read, update, delete: if false;
+    }
+
     // ----- Mexe-Mexe online -----
     // Jogo de família, mas as regras agora não deixam ninguém além do jogador da vez mexer na partida,
     // nem trocar o criador da sala, nem mexer em coisa de outra pessoa. Quem sabe o código (o link)
